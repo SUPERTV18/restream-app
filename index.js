@@ -23,8 +23,8 @@ const channels = {
     output: "rtmp://mediamtx-server-production.up.railway.app/live/test"
   },
   ch1: {
-    input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/15459447873244_17903293041372_qj4esun44e"
+    input: "https://sptvspk.st-plasma.workers.dev/max1_4k/index.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/15353241738954_17067913775818_g4hb6iy6fe"
   },
   ch2: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745019",
