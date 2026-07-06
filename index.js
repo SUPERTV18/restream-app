@@ -19,16 +19,16 @@ let totalViews = {};
 // ======================
 const channels = {
   ch4k: {
-    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255224.m3u8",
-    output: "rtmp://mediamtx-server-production.up.railway.app/live/test"
+    input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
+    output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0"
   },
   ch1: {
-    input: "https://sptvspk.st-plasma.workers.dev/max1_4k/index.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/15353241738954_17067913775818_g4hb6iy6fe"
+    input: "https://cp11.adabmedia.com/hls2/sport.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm"
   },
   ch2: {
-    input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745019",
-    output: "rtmp://vsu.okcdn.ru/input/15458583715548_17901773523676_eniwiolnjq"
+    input: "https://cp11.adabmedia.com/hls2/sport.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy"
   },
   ch3: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
