@@ -298,26 +298,39 @@ app.get("/dashboard", (req, res) => {
 
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>IPTV PRO PANEL</title>
 
 <style>
 
-body{
+*{
+box-sizing:border-box;
+}
+
+html, body{
 margin:0;
+padding:0;
+overflow-x:hidden;
+}
+
+body{
 font-family:Arial;
 background:linear-gradient(135deg,#070b1a,#0b1020);
 color:white;
 display:flex;
 min-height:100vh;
+min-height:100dvh;
 }
 
 .side{
 width:260px;
+flex-shrink:0;
 background:rgba(16,25,56,0.9);
 backdrop-filter:blur(10px);
 padding:20px;
 border-right:1px solid #1d2b56;
+transition:transform 0.3s;
+z-index:1000;
 }
 
 .side h2{
@@ -336,6 +349,7 @@ background:#182347;
 color:white;
 font-weight:bold;
 transition:0.3s;
+font-size:15px;
 }
 
 .side button:hover{
@@ -347,6 +361,8 @@ transform:scale(1.03);
 flex:1;
 padding:20px;
 overflow:auto;
+width:100%;
+min-width:0;
 }
 
 .grid{
@@ -452,6 +468,105 @@ z-index:999;
 .conn-ok{background:#1db95433;color:#1db954;border:1px solid #1db954}
 .conn-bad{background:#e74c3c33;color:#e74c3c;border:1px solid #e74c3c}
 
+/* ======================
+   📱 MOBILE / RESPONSIVE
+   ====================== */
+
+.menuBtn{
+display:none;
+position:fixed;
+top:12px;
+right:12px;
+z-index:1100;
+width:44px;
+height:44px;
+border-radius:12px;
+border:1px solid #26345f;
+background:#141d38;
+color:#3da9fc;
+font-size:20px;
+cursor:pointer;
+align-items:center;
+justify-content:center;
+}
+
+.overlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.5);
+z-index:999;
+}
+
+.overlay.show{
+display:block;
+}
+
+@media (max-width: 820px){
+
+body{
+display:block;
+}
+
+.menuBtn{
+display:flex;
+}
+
+.side{
+position:fixed;
+top:0;
+right:0;
+height:100%;
+height:100dvh;
+transform:translateX(100%);
+box-shadow:-10px 0 30px rgba(0,0,0,0.5);
+overflow-y:auto;
+}
+
+.side.open{
+transform:translateX(0);
+}
+
+.main{
+padding:70px 14px 20px 14px;
+}
+
+.grid{
+grid-template-columns:1fr;
+gap:14px;
+}
+
+.card{
+padding:14px;
+}
+
+.info{
+font-size:12.5px;
+}
+
+.btns button{
+flex:1 1 40%;
+font-size:13px;
+padding:10px 6px;
+}
+
+#connStatus{
+top:auto;
+bottom:10px;
+left:10px;
+right:auto;
+}
+
+}
+
+@media (max-width: 380px){
+
+.btns button{
+flex:1 1 100%;
+}
+
+}
+
 </style>
 
 </head>
@@ -460,12 +575,15 @@ z-index:999;
 
 <div id="connStatus" class="conn-bad">⏳ اتصال...</div>
 
-<div class="side">
+<button class="menuBtn" onclick="toggleMenu()">☰</button>
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+<div class="side" id="sideMenu">
 
 <h2>📡 IPTV PRO</h2>
 
-<button onclick="show('channels')">📺 القنوات</button>
-<button onclick="show('add')">➕ إضافة قناة</button>
+<button onclick="show('channels');closeMenu()">📺 القنوات</button>
+<button onclick="show('add');closeMenu()">➕ إضافة قناة</button>
 
 </div>
 
@@ -493,6 +611,16 @@ z-index:999;
 
 let channelsCache = {};
 let statusCache = {};
+
+function toggleMenu(){
+document.getElementById("sideMenu").classList.toggle("open");
+document.getElementById("overlay").classList.toggle("show");
+}
+
+function closeMenu(){
+document.getElementById("sideMenu").classList.remove("open");
+document.getElementById("overlay").classList.remove("show");
+}
 
 function show(id){
 document.getElementById("channels").style.display="none";
