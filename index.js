@@ -388,7 +388,29 @@ app.get("/dashboard", (req, res) => {
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>IPTV PRO PANEL</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
+
+:root{
+--void:#0a0c10;
+--panel:#12151c;
+--panel-raised:#171b24;
+--panel-inset:#0d0f15;
+--hairline:#242a35;
+--hairline-soft:#1a1e27;
+--text:#e9ebf0;
+--text-dim:#8890a0;
+--text-faint:#565d6d;
+--tally:#ff3b30;
+--tally-dim:#3a1512;
+--tally-glow:rgba(255,59,48,0.45);
+--amber:#ffb020;
+--cyan:#2fd3c8;
+--off:#3d4453;
+}
 
 *{
 box-sizing:border-box;
@@ -400,192 +422,383 @@ padding:0;
 overflow-x:hidden;
 }
 
+@media (prefers-reduced-motion: reduce){
+*{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+}
+
 body{
-font-family:Arial;
-background:linear-gradient(135deg,#070b1a,#0b1020);
-color:white;
+font-family:'Cairo',Arial,sans-serif;
+background:
+  radial-gradient(1200px 500px at 15% -10%, rgba(255,59,48,0.05), transparent),
+  radial-gradient(900px 500px at 100% 0%, rgba(47,211,200,0.05), transparent),
+  var(--void);
+color:var(--text);
 display:flex;
 min-height:100vh;
 min-height:100dvh;
 }
 
+::selection{ background:var(--tally); color:#fff; }
+
 .side{
-width:260px;
+width:250px;
 flex-shrink:0;
-background:rgba(16,25,56,0.9);
-backdrop-filter:blur(10px);
-padding:20px;
-border-right:1px solid #1d2b56;
+background:var(--panel);
+padding:0;
+border-right:1px solid var(--hairline);
 transition:transform 0.3s;
 z-index:1000;
+display:flex;
+flex-direction:column;
+}
+
+.side .rackHead{
+padding:22px 20px 16px 20px;
+border-bottom:1px solid var(--hairline);
+}
+
+.side .rackHead .eyebrow{
+font-family:'IBM Plex Mono',monospace;
+font-size:10px;
+letter-spacing:2px;
+color:var(--tally);
+display:block;
+margin-bottom:6px;
 }
 
 .side h2{
-margin-bottom:20px;
-color:#3da9fc;
+margin:0;
+font-size:19px;
+font-weight:900;
+letter-spacing:0.3px;
+color:var(--text);
+}
+
+.side .rackBody{
+padding:18px 16px;
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+.side .rackLabel{
+font-family:'IBM Plex Mono',monospace;
+font-size:10px;
+letter-spacing:1.5px;
+color:var(--text-faint);
+padding:10px 6px 4px 6px;
 }
 
 .side button{
 width:100%;
-padding:12px;
-margin-bottom:10px;
-border:none;
-border-radius:12px;
+padding:13px 14px;
+margin-bottom:2px;
+border:1px solid transparent;
+border-radius:8px;
 cursor:pointer;
-background:#182347;
-color:white;
-font-weight:bold;
-transition:0.3s;
-font-size:15px;
+background:transparent;
+color:var(--text-dim);
+font-weight:600;
+font-family:'Cairo',Arial,sans-serif;
+transition:0.15s;
+font-size:14.5px;
+text-align:right;
 }
 
 .side button:hover{
-background:#2a3a6a;
-transform:scale(1.03);
+background:var(--panel-raised);
+color:var(--text);
+border-color:var(--hairline);
 }
+
+.side .rackFoot{
+margin-top:auto;
+padding:16px;
+border-top:1px solid var(--hairline);
+display:flex;
+flex-direction:column;
+gap:8px;
+}
+
+.side .rackFoot button.go{background:rgba(47,211,200,0.08);color:var(--cyan);border:1px solid rgba(47,211,200,0.25);font-weight:700;}
+.side .rackFoot button.go:hover{background:rgba(47,211,200,0.16);}
+.side .rackFoot button.stop2{background:rgba(255,59,48,0.08);color:var(--tally);border:1px solid rgba(255,59,48,0.25);font-weight:700;}
+.side .rackFoot button.stop2:hover{background:rgba(255,59,48,0.16);}
 
 .main{
 flex:1;
-padding:20px;
+padding:26px 30px;
 overflow:auto;
 width:100%;
 min-width:0;
 }
 
+.pageHead{
+display:flex;
+align-items:baseline;
+justify-content:space-between;
+margin-bottom:20px;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.pageHead h1{
+font-size:15px;
+letter-spacing:2px;
+font-family:'IBM Plex Mono',monospace;
+color:var(--text-faint);
+margin:0;
+font-weight:500;
+text-transform:uppercase;
+}
+
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-gap:18px;
+gap:16px;
 }
 
+/* ---------- monitor tile ---------- */
+
 .card{
-background:linear-gradient(145deg,#141d38,#101938);
-padding:18px;
-border-radius:18px;
-border:1px solid #26345f;
-box-shadow:0 8px 20px rgba(0,0,0,0.4);
-transition:0.3s;
+background:var(--panel);
+border-radius:10px;
+border:1px solid var(--hairline);
+transition:0.2s;
 position:relative;
 overflow:hidden;
 }
 
 .card:hover{
-transform:translateY(-5px);
-box-shadow:0 12px 25px rgba(0,0,0,0.6);
+border-color:#333c4d;
+transform:translateY(-2px);
 }
 
-.card::before{
-content:"";
+.card.isLive{
+border-color:rgba(255,59,48,0.35);
+}
+
+.screen{
+position:relative;
+padding:16px 18px 14px 18px;
+background:
+  repeating-linear-gradient(180deg, rgba(255,255,255,0.014) 0px, rgba(255,255,255,0.014) 1px, transparent 1px, transparent 3px),
+  var(--panel-inset);
+border-bottom:1px solid var(--hairline);
+}
+
+.tally{
 position:absolute;
-top:0;
-left:0;
-width:100%;
-height:3px;
-background:linear-gradient(90deg,#3da9fc,#00ff99);
+top:14px;
+left:16px;
+width:9px;
+height:9px;
+border-radius:50%;
+background:var(--off);
 }
 
-.live{color:#00ff99;font-weight:bold}
-.off{color:#ff4d4d;font-weight:bold}
+.card.isLive .tally{
+background:var(--tally);
+box-shadow:0 0 10px 2px var(--tally-glow);
+animation:tallyPulse 2s ease-in-out infinite;
+}
+
+@keyframes tallyPulse{
+0%,100%{ opacity:1; }
+50%{ opacity:0.45; }
+}
+
+.screen h3{
+margin:0;
+padding-left:20px;
+font-family:'IBM Plex Mono',monospace;
+font-size:17px;
+font-weight:600;
+letter-spacing:0.5px;
+color:var(--text);
+}
+
+.chState{
+margin-top:8px;
+padding-left:20px;
+font-family:'IBM Plex Mono',monospace;
+font-size:11px;
+letter-spacing:1.5px;
+font-weight:600;
+}
+
+.live{color:var(--tally)}
+.off{color:var(--text-faint)}
+
+.readout{
+display:flex;
+gap:22px;
+margin-top:12px;
+padding-left:20px;
+}
+
+.readout .rItem .rNum{
+font-family:'IBM Plex Mono',monospace;
+font-size:20px;
+font-weight:600;
+color:var(--cyan);
+display:block;
+line-height:1.1;
+}
+
+.readout .rItem.dim .rNum{ color:var(--text-dim); }
+
+.readout .rItem .rLbl{
+font-size:10.5px;
+color:var(--text-faint);
+letter-spacing:0.5px;
+}
+
+.cardBody{
+padding:14px 18px 16px 18px;
+}
 
 .info{
-margin-top:10px;
-font-size:13px;
-color:#b8c1ec;
+margin-top:0;
+margin-bottom:9px;
+font-size:12px;
+color:var(--text-dim);
 word-break:break-all;
+line-height:1.5;
+}
+
+.info b{
+display:block;
+font-family:'IBM Plex Mono',monospace;
+font-size:9.5px;
+letter-spacing:1.5px;
+color:var(--text-faint);
+font-weight:500;
+margin-bottom:2px;
+}
+
+.info span{
+font-family:'IBM Plex Mono',monospace;
+font-size:11.5px;
+direction:ltr;
+display:block;
+text-align:left;
+color:#aeb4c2;
 }
 
 .btns{
 display:flex;
-gap:8px;
-margin-top:12px;
+gap:6px;
+margin-top:10px;
 flex-wrap:wrap;
 }
 
 button{
-padding:10px;
-border:none;
-border-radius:10px;
+padding:9px 10px;
+border:1px solid transparent;
+border-radius:7px;
 cursor:pointer;
-font-weight:bold;
-transition:0.2s;
+font-weight:700;
+font-family:'Cairo',Arial,sans-serif;
+font-size:12.5px;
+transition:0.15s;
+letter-spacing:0.2px;
 }
 
-button:hover{transform:scale(1.05)}
+button:hover{filter:brightness(1.12)}
+button:active{transform:translateY(1px)}
 
-.start{background:#1db954;color:white}
-.stop{background:#e74c3c;color:white}
-.edit{background:#3498db;color:white}
-.del{background:#555;color:white}
+.start{background:rgba(47,211,200,0.12);color:var(--cyan);border-color:rgba(47,211,200,0.3)}
+.stop{background:rgba(255,59,48,0.12);color:var(--tally);border-color:rgba(255,59,48,0.3)}
+.edit{background:var(--panel-raised);color:var(--text-dim);border-color:var(--hairline)}
+.del{background:transparent;color:var(--text-faint);border-color:var(--hairline)}
 
 input{
 width:100%;
-padding:12px;
+padding:12px 14px;
 margin-bottom:10px;
-border-radius:10px;
-border:none;
-background:#0f1733;
-color:white;
+border-radius:8px;
+border:1px solid var(--hairline);
+background:var(--panel-inset);
+color:var(--text);
 outline:none;
+font-family:'IBM Plex Mono',monospace;
+font-size:13px;
+direction:ltr;
+text-align:left;
 }
+
+input::placeholder{ color:var(--text-faint); font-family:'Cairo',Arial,sans-serif; }
 
 input:focus{
-border:1px solid #3da9fc;
+border-color:var(--cyan);
 }
 
-h3{margin:0;color:#3da9fc}
+h3{margin:0;color:var(--text)}
 
 hr{
 border:0;
 height:1px;
-background:#26345f;
-margin:10px 0;
+background:var(--hairline);
+margin:14px 0;
 }
 
 #connStatus{
 position:fixed;
-top:10px;
-left:10px;
-padding:6px 12px;
+top:14px;
+left:14px;
+padding:7px 14px;
 border-radius:20px;
-font-size:12px;
-font-weight:bold;
+font-size:11px;
+font-family:'IBM Plex Mono',monospace;
+letter-spacing:0.5px;
+font-weight:500;
 z-index:999;
+border:1px solid;
 }
 
-.conn-ok{background:#1db95433;color:#1db954;border:1px solid #1db954}
-.conn-bad{background:#e74c3c33;color:#e74c3c;border:1px solid #e74c3c}
+.conn-ok{background:rgba(47,211,200,0.08);color:var(--cyan);border-color:rgba(47,211,200,0.3)}
+.conn-bad{background:rgba(255,59,48,0.08);color:var(--tally);border-color:rgba(255,59,48,0.3)}
+
+/* ---------- master control strip ---------- */
 
 .statsBar{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:14px;
-margin-bottom:18px;
+grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+gap:1px;
+margin-bottom:22px;
+background:var(--hairline);
+border:1px solid var(--hairline);
+border-radius:10px;
+overflow:hidden;
 }
 
 .statCard{
-background:linear-gradient(145deg,#141d38,#101938);
-border:1px solid #26345f;
-border-radius:16px;
-padding:16px;
-text-align:center;
+background:var(--panel);
+padding:16px 18px;
+text-align:right;
+position:relative;
 }
 
 .statCard .num{
-font-size:26px;
-font-weight:bold;
+font-family:'IBM Plex Mono',monospace;
+font-size:30px;
+font-weight:600;
 display:block;
-margin-bottom:4px;
+margin-bottom:2px;
+line-height:1;
 }
 
 .statCard .lbl{
-font-size:12px;
-color:#b8c1ec;
+font-size:10.5px;
+letter-spacing:0.5px;
+color:var(--text-faint);
 }
 
-.statCard.live .num{color:#00ff99}
-.statCard.off .num{color:#ff4d4d}
-.statCard.info .num{color:#3da9fc}
-.statCard.warn .num{color:#f5a623}
+.statCard.live .num{color:var(--tally)}
+.statCard.off .num{color:var(--text-dim)}
+.statCard.info .num{color:var(--cyan)}
+.statCard.warn .num{color:var(--amber)}
 
 .toolbar{
 display:flex;
@@ -600,14 +813,16 @@ margin-bottom:0;
 }
 
 .toolbar select{
-flex:0 1 260px;
-padding:12px;
-border-radius:10px;
-border:none;
-background:#0f1733;
-color:white;
+flex:0 1 240px;
+padding:12px 14px;
+border-radius:8px;
+border:1px solid var(--hairline);
+background:var(--panel-inset);
+color:var(--text-dim);
 outline:none;
 cursor:pointer;
+font-family:'Cairo',Arial,sans-serif;
+font-size:13px;
 }
 
 /* ======================
@@ -618,11 +833,12 @@ cursor:pointer;
 display:none;
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.7);
+background:rgba(4,5,8,0.75);
 z-index:2000;
 align-items:center;
 justify-content:center;
 padding:20px;
+backdrop-filter:blur(2px);
 }
 
 .logOverlay.show{
@@ -630,9 +846,9 @@ display:flex;
 }
 
 .logModal{
-background:#0f1733;
-border:1px solid #26345f;
-border-radius:18px;
+background:var(--panel);
+border:1px solid var(--hairline);
+border-radius:12px;
 width:100%;
 max-width:800px;
 max-height:80vh;
@@ -646,37 +862,41 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 padding:14px 18px;
-border-bottom:1px solid #26345f;
+border-bottom:1px solid var(--hairline);
+background:var(--panel-raised);
 }
 
 .logHeader h3{
 margin:0;
+font-size:14px;
+font-family:'IBM Plex Mono',monospace;
 }
 
 .logHeader button{
 padding:8px 14px;
-color:white;
+color:var(--text);
 }
 
 .logBody{
 padding:14px 18px;
 overflow-y:auto;
-font-family:monospace;
-font-size:12px;
-color:#b8c1ec;
+font-family:'IBM Plex Mono',monospace;
+font-size:11.5px;
+color:var(--text-dim);
 white-space:pre-wrap;
 word-break:break-all;
 direction:ltr;
 text-align:left;
+background:var(--panel-inset);
 }
 
 .logBody .logLine{
-padding:3px 0;
-border-bottom:1px solid #1d2b56;
+padding:4px 0;
+border-bottom:1px solid var(--hairline-soft);
 }
 
 .logBody .logTime{
-color:#3da9fc;
+color:var(--cyan);
 margin-left:8px;
 }
 
@@ -692,11 +912,11 @@ right:12px;
 z-index:1100;
 width:44px;
 height:44px;
-border-radius:12px;
-border:1px solid #26345f;
-background:#141d38;
-color:#3da9fc;
-font-size:20px;
+border-radius:10px;
+border:1px solid var(--hairline);
+background:var(--panel);
+color:var(--text);
+font-size:19px;
 cursor:pointer;
 align-items:center;
 justify-content:center;
@@ -706,7 +926,7 @@ justify-content:center;
 display:none;
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.5);
+background:rgba(0,0,0,0.55);
 z-index:999;
 }
 
@@ -748,17 +968,9 @@ grid-template-columns:1fr;
 gap:14px;
 }
 
-.card{
-padding:14px;
-}
-
-.info{
-font-size:12.5px;
-}
-
 .btns button{
 flex:1 1 40%;
-font-size:13px;
+font-size:12.5px;
 padding:10px 6px;
 }
 
@@ -772,15 +984,15 @@ flex:1 1 auto;
 
 .statsBar{
 grid-template-columns:repeat(2,1fr);
-gap:10px;
+gap:1px;
 }
 
 .statCard{
-padding:12px;
+padding:13px 14px;
 }
 
 .statCard .num{
-font-size:20px;
+font-size:22px;
 }
 
 #connStatus{
@@ -813,22 +1025,32 @@ flex:1 1 100%;
 
 <div class="side" id="sideMenu">
 
+<div class="rackHead">
+<span class="eyebrow">MASTER CONTROL</span>
 <h2>📡 IPTV PRO</h2>
+</div>
 
+<div class="rackBody">
+<div class="rackLabel">التنقل</div>
 <button onclick="show('channels');closeMenu()">📺 القنوات</button>
 <button onclick="show('add');closeMenu()">➕ إضافة قناة</button>
 <button onclick="show('events');closeMenu()">📜 سجل الأحداث</button>
+</div>
 
-<hr>
-
-<button onclick="startAll()" style="background:#1db954">▶ تشغيل الكل</button>
-<button onclick="stopAll()" style="background:#e74c3c">⏹ إيقاف الكل</button>
+<div class="rackFoot">
+<button class="go" onclick="startAll()">▶ تشغيل الكل</button>
+<button class="stop2" onclick="stopAll()">⏹ إيقاف الكل</button>
+</div>
 
 </div>
 
 <div class="main">
 
 <div id="channels">
+
+<div class="pageHead">
+<h1>حائط المراقبة — Monitor Wall</h1>
+</div>
 
 <div id="statsBar" class="statsBar"></div>
 
@@ -929,19 +1151,19 @@ const restarts = eventsCache.filter(e => e.type === "restart").length;
 box.innerHTML = \`
 <div class="statCard live">
 <span class="num">\${live}</span>
-<span class="lbl">🟢 قنوات شغالة</span>
+<span class="lbl">ON AIR — قنوات شغالة</span>
 </div>
 <div class="statCard off">
 <span class="num">\${off}</span>
-<span class="lbl">🔴 قنوات متوقفة</span>
+<span class="lbl">OFFLINE — قنوات متوقفة</span>
 </div>
 <div class="statCard info">
 <span class="num">\${totalViewers}</span>
-<span class="lbl">👁️ إجمالي المشاهدين الحاليين</span>
+<span class="lbl">LIVE VIEWERS — المشاهدون الآن</span>
 </div>
 <div class="statCard warn">
 <span class="num">\${restarts}</span>
-<span class="lbl">🔄 مرات إعادة تشغيل تلقائية</span>
+<span class="lbl">AUTO-RESTARTS — إعادة التشغيل</span>
 </div>
 \`;
 
@@ -990,38 +1212,50 @@ for(const id of ids){
 
 const current = statusCache[id]?.viewers || 0;
 
+const isLive = !!statusCache[id]?.active;
+const total = statusCache[id]?.total || 0;
+
 box.innerHTML += \`
 
-<div class="card">
+<div class="card \${isLive ? 'isLive' : ''}">
 
-<h3>📺 \${id}</h3>
+<div class="screen">
+<div class="tally"></div>
+<h3>\${id}</h3>
+<div class="chState \${isLive ? 'live' : 'off'}">\${isLive ? '● ON AIR' : '○ OFFLINE'}</div>
 
-<div class="\${statusCache[id]?.active ? 'live' : 'off'}">
-\${statusCache[id]?.active ? '🟢 LIVE' : '🔴 OFFLINE'}
+<div class="readout">
+<div class="rItem \${isLive ? '' : 'dim'}">
+<span class="rNum">\${current}</span>
+<span class="rLbl">مشاهد الآن</span>
+</div>
+<div class="rItem dim">
+<span class="rNum">\${total}</span>
+<span class="rLbl">إجمالي</span>
+</div>
+</div>
+</div>
+
+<div class="cardBody">
+
+<div class="info">
+<b>INPUT</b>
+<span>\${channelsCache[id].input || '—'}</span>
 </div>
 
 <div class="info">
-👁️ الحالي: <b>\${current}</b>
-<br>
-📊 الإجمالي: <b>\${statusCache[id]?.total || 0}</b>
-</div>
-
-<hr>
-
-<div class="info">
-<b>INPUT:</b><br>\${channelsCache[id].input}
-</div>
-
-<div class="info">
-<b>OUTPUT:</b><br>\${channelsCache[id].output}
+<b>OUTPUT</b>
+<span>\${channelsCache[id].output || '—'}</span>
 </div>
 
 <div class="btns">
 <button class="start" onclick="start('\${id}')">▶ تشغيل</button>
 <button class="stop" onclick="stop('\${id}')">⏹ إيقاف</button>
 <button class="edit" onclick="editChannel('\${id}')">✏ تعديل</button>
-<button class="del" onclick="del('\${id}')">🗑 حذف</button>
 <button class="edit" onclick="showLogs('\${id}')">📄 اللوج</button>
+<button class="del" onclick="del('\${id}')">🗑 حذف</button>
+</div>
+
 </div>
 
 </div>
