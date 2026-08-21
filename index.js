@@ -528,6 +528,61 @@ z-index:999;
 .conn-ok{background:#1db95433;color:#1db954;border:1px solid #1db954}
 .conn-bad{background:#e74c3c33;color:#e74c3c;border:1px solid #e74c3c}
 
+.statsBar{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:14px;
+margin-bottom:18px;
+}
+
+.statCard{
+background:linear-gradient(145deg,#141d38,#101938);
+border:1px solid #26345f;
+border-radius:16px;
+padding:16px;
+text-align:center;
+}
+
+.statCard .num{
+font-size:26px;
+font-weight:bold;
+display:block;
+margin-bottom:4px;
+}
+
+.statCard .lbl{
+font-size:12px;
+color:#b8c1ec;
+}
+
+.statCard.live .num{color:#00ff99}
+.statCard.off .num{color:#ff4d4d}
+.statCard.info .num{color:#3da9fc}
+.statCard.warn .num{color:#f5a623}
+
+.toolbar{
+display:flex;
+gap:10px;
+margin-bottom:18px;
+flex-wrap:wrap;
+}
+
+.toolbar input{
+flex:1 1 260px;
+margin-bottom:0;
+}
+
+.toolbar select{
+flex:0 1 260px;
+padding:12px;
+border-radius:10px;
+border:none;
+background:#0f1733;
+color:white;
+outline:none;
+cursor:pointer;
+}
+
 /* ======================
    📱 MOBILE / RESPONSIVE
    ====================== */
@@ -610,6 +665,27 @@ font-size:13px;
 padding:10px 6px;
 }
 
+.toolbar{
+flex-direction:column;
+}
+
+.toolbar select{
+flex:1 1 auto;
+}
+
+.statsBar{
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+}
+
+.statCard{
+padding:12px;
+}
+
+.statCard .num{
+font-size:20px;
+}
+
 #connStatus{
 top:auto;
 bottom:10px;
@@ -657,7 +733,16 @@ flex:1 1 100%;
 
 <div id="channels">
 
-<input id="searchBox" placeholder="🔍 بحث عن قناة..." oninput="onSearch(this.value)" style="max-width:400px">
+<div id="statsBar" class="statsBar"></div>
+
+<div class="toolbar">
+<input id="searchBox" placeholder="🔍 بحث عن قناة..." oninput="onSearch(this.value)">
+<select id="sortSelect" onchange="onSort(this.value)">
+<option value="status">🔀 ترتيب: الحالة (شغال أولاً)</option>
+<option value="viewers">👁️ ترتيب: الأعلى مشاهدين</option>
+<option value="name">🔤 ترتيب: الاسم</option>
+</select>
+</div>
 
 <div id="list" class="grid"></div>
 </div>
@@ -690,6 +775,7 @@ let channelsCache = {};
 let statusCache = {};
 let eventsCache = [];
 let searchTerm = "";
+let sortMode = "status";
 
 function toggleMenu(){
 document.getElementById("sideMenu").classList.toggle("open");
@@ -708,16 +794,85 @@ document.getElementById("events").style.display="none";
 document.getElementById(id).style.display="block";
 }
 
+function renderStats(){
+
+const box = document.getElementById("statsBar");
+if(!box) return;
+
+let live = 0, off = 0, totalViewers = 0;
+
+for(const id in channelsCache){
+if(statusCache[id]?.active){
+live++;
+totalViewers += statusCache[id]?.viewers || 0;
+} else {
+off++;
+}
+}
+
+const restarts = eventsCache.filter(e => e.type === "restart").length;
+
+box.innerHTML = \`
+<div class="statCard live">
+<span class="num">\${live}</span>
+<span class="lbl">🟢 قنوات شغالة</span>
+</div>
+<div class="statCard off">
+<span class="num">\${off}</span>
+<span class="lbl">🔴 قنوات متوقفة</span>
+</div>
+<div class="statCard info">
+<span class="num">\${totalViewers}</span>
+<span class="lbl">👁️ إجمالي المشاهدين الحاليين</span>
+</div>
+<div class="statCard warn">
+<span class="num">\${restarts}</span>
+<span class="lbl">🔄 مرات إعادة تشغيل تلقائية</span>
+</div>
+\`;
+
+}
+
+function sortedChannelIds(){
+
+let ids = Object.keys(channelsCache);
+
+const term = searchTerm.trim().toLowerCase();
+if(term){
+ids = ids.filter(id => id.toLowerCase().includes(term));
+}
+
+if(sortMode === "status"){
+ids.sort((a,b) => {
+const aActive = statusCache[a]?.active ? 1 : 0;
+const bActive = statusCache[b]?.active ? 1 : 0;
+return bActive - aActive;
+});
+} else if(sortMode === "viewers"){
+ids.sort((a,b) => (statusCache[b]?.viewers||0) - (statusCache[a]?.viewers||0));
+} else if(sortMode === "name"){
+ids.sort((a,b) => a.localeCompare(b));
+}
+
+return ids;
+
+}
+
+function onSort(val){
+sortMode = val;
+render();
+}
+
 function render(){
+
+renderStats();
 
 const box = document.getElementById("list");
 box.innerHTML = "";
 
-const term = searchTerm.trim().toLowerCase();
+const ids = sortedChannelIds();
 
-for(const id in channelsCache){
-
-if(term && !id.toLowerCase().includes(term)) continue;
+for(const id of ids){
 
 const current = statusCache[id]?.viewers || 0;
 
@@ -778,6 +933,7 @@ async function loadEvents(){
 const r = await fetch("/events");
 eventsCache = await r.json();
 renderEvents();
+renderStats();
 }
 
 function eventLabel(type){
@@ -870,6 +1026,7 @@ render();
 eventsCache.unshift(parsed.data);
 if(eventsCache.length > 200) eventsCache.pop();
 renderEvents();
+renderStats();
 }
 
 }catch(e){}
