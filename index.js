@@ -18,6 +18,27 @@ let totalViews = {};
 // عملاء الـ WebSocket المتصلين بالداشبورد
 let clients = [];
 
+// سجل الأحداث (آخر 200 حدث فقط)
+let eventLog = [];
+const MAX_EVENTS = 200;
+
+function logEvent(id, type, message) {
+  const entry = {
+    id,
+    type, // start | stop | exit | restart
+    message,
+    time: new Date().toISOString()
+  };
+
+  eventLog.unshift(entry);
+
+  if (eventLog.length > MAX_EVENTS) {
+    eventLog = eventLog.slice(0, MAX_EVENTS);
+  }
+
+  broadcastEvent(entry);
+}
+
 // ======================
 // 🎯 CHANNELS
 // ======================
@@ -115,6 +136,7 @@ function spawnStream(id) {
   if (!ch) return;
 
   console.log("▶ START:", id);
+  logEvent(id, "start", "تم تشغيل القناة");
 
   const ffmpeg = spawn("ffmpeg", [
     "-re",
@@ -175,6 +197,7 @@ function spawnStream(id) {
 
   ffmpeg.on("exit", () => {
     console.log("❌ EXIT:", id);
+    logEvent(id, "exit", "توقفت القناة (خروج غير متوقع)");
 
     delete ffmpegProcesses[id];
     viewers[id] = 0;
@@ -186,7 +209,10 @@ function spawnStream(id) {
 
     // إعادة تشغيل تلقائي
     setTimeout(() => {
-      if (!ffmpegProcesses[id]) spawnStream(id);
+      if (!ffmpegProcesses[id]) {
+        logEvent(id, "restart", "إعادة تشغيل تلقائية بعد التوقف");
+        spawnStream(id);
+      }
     }, 8000);
   });
 }
@@ -212,6 +238,7 @@ app.get("/stop", (req, res) => {
   if (ffmpegProcesses[id]) {
     ffmpegProcesses[id].kill("SIGKILL");
     delete ffmpegProcesses[id];
+    logEvent(id, "stop", "تم إيقاف القناة يدويًا");
   }
 
   viewers[id] = 0;
@@ -222,6 +249,39 @@ app.get("/stop", (req, res) => {
   }
 
   res.send("stopped " + id);
+});
+
+// ======================
+// ▶⏹ تشغيل / إيقاف كل القنوات دفعة واحدة
+// ======================
+app.get("/start-all", (req, res) => {
+  for (const id in channels) {
+    spawnStream(id);
+  }
+  res.json({ ok: true });
+});
+
+app.get("/stop-all", (req, res) => {
+  for (const id in channels) {
+    if (ffmpegProcesses[id]) {
+      ffmpegProcesses[id].kill("SIGKILL");
+      delete ffmpegProcesses[id];
+      logEvent(id, "stop", "تم إيقاف القناة يدويًا (إيقاف الكل)");
+    }
+    viewers[id] = 0;
+    if (viewerIntervals[id]) {
+      clearInterval(viewerIntervals[id]);
+      delete viewerIntervals[id];
+    }
+  }
+  res.json({ ok: true });
+});
+
+// ======================
+// 📜 سجل الأحداث
+// ======================
+app.get("/events", (req, res) => {
+  res.json(eventLog);
 });
 
 // ======================
@@ -584,12 +644,21 @@ flex:1 1 100%;
 
 <button onclick="show('channels');closeMenu()">📺 القنوات</button>
 <button onclick="show('add');closeMenu()">➕ إضافة قناة</button>
+<button onclick="show('events');closeMenu()">📜 سجل الأحداث</button>
+
+<hr>
+
+<button onclick="startAll()" style="background:#1db954">▶ تشغيل الكل</button>
+<button onclick="stopAll()" style="background:#e74c3c">⏹ إيقاف الكل</button>
 
 </div>
 
 <div class="main">
 
 <div id="channels">
+
+<input id="searchBox" placeholder="🔍 بحث عن قناة..." oninput="onSearch(this.value)" style="max-width:400px">
+
 <div id="list" class="grid"></div>
 </div>
 
@@ -605,12 +674,22 @@ flex:1 1 100%;
 
 </div>
 
+<div id="events" style="display:none">
+
+<h2>📜 سجل الأحداث</h2>
+
+<div id="eventsList"></div>
+
+</div>
+
 </div>
 
 <script>
 
 let channelsCache = {};
 let statusCache = {};
+let eventsCache = [];
+let searchTerm = "";
 
 function toggleMenu(){
 document.getElementById("sideMenu").classList.toggle("open");
@@ -625,6 +704,7 @@ document.getElementById("overlay").classList.remove("show");
 function show(id){
 document.getElementById("channels").style.display="none";
 document.getElementById("add").style.display="none";
+document.getElementById("events").style.display="none";
 document.getElementById(id).style.display="block";
 }
 
@@ -633,7 +713,11 @@ function render(){
 const box = document.getElementById("list");
 box.innerHTML = "";
 
+const term = searchTerm.trim().toLowerCase();
+
 for(const id in channelsCache){
+
+if(term && !id.toLowerCase().includes(term)) continue;
 
 const current = statusCache[id]?.viewers || 0;
 
@@ -689,6 +773,68 @@ statusCache = await st.json();
 render();
 }
 
+// تحميل سجل الأحداث (مرة واحدة عند فتح الصفحة)
+async function loadEvents(){
+const r = await fetch("/events");
+eventsCache = await r.json();
+renderEvents();
+}
+
+function eventLabel(type){
+if(type === "start") return { icon:"▶", cls:"live", text:"تشغيل" };
+if(type === "stop") return { icon:"⏹", cls:"off", text:"إيقاف" };
+if(type === "exit") return { icon:"❌", cls:"off", text:"خروج غير متوقع" };
+if(type === "restart") return { icon:"🔄", cls:"live", text:"إعادة تشغيل" };
+return { icon:"•", cls:"", text:type };
+}
+
+function renderEvents(){
+
+const box = document.getElementById("eventsList");
+if(!box) return;
+
+if(eventsCache.length === 0){
+box.innerHTML = '<div class="info">لا يوجد أحداث بعد</div>';
+return;
+}
+
+box.innerHTML = "";
+
+for(const ev of eventsCache){
+
+const lbl = eventLabel(ev.type);
+const t = new Date(ev.time);
+const timeStr = t.toLocaleString("ar-EG");
+
+box.innerHTML += \`
+<div class="card" style="padding:12px 16px">
+<div class="\${lbl.cls}">\${lbl.icon} \${lbl.text} — 📺 \${ev.id}</div>
+<div class="info">\${ev.message}</div>
+<div class="info" style="opacity:0.7">\${timeStr}</div>
+</div>
+\`;
+
+}
+
+}
+
+function onSearch(val){
+searchTerm = val;
+render();
+}
+
+async function startAll(){
+if(!confirm("تشغيل كل القنوات؟")) return;
+await fetch("/start-all");
+load();
+}
+
+async function stopAll(){
+if(!confirm("إيقاف كل القنوات؟")) return;
+await fetch("/stop-all");
+load();
+}
+
 // ============================
 // 🔌 WebSocket - تحديث لحظي لعدد المشاهدين وحالة البث
 // ============================
@@ -715,8 +861,17 @@ ws.onerror = () => ws.close();
 
 ws.onmessage = (msg) => {
 try{
-statusCache = JSON.parse(msg.data);
+const parsed = JSON.parse(msg.data);
+
+if(parsed.type === "status"){
+statusCache = parsed.data;
 render();
+} else if(parsed.type === "event"){
+eventsCache.unshift(parsed.data);
+if(eventsCache.length > 200) eventsCache.pop();
+renderEvents();
+}
+
 }catch(e){}
 };
 }
@@ -776,6 +931,7 @@ load();
 
 // 🚀 بداية التشغيل
 load();
+loadEvents();
 connectWS();
 
 // تحديث احتياطي لو الـ WebSocket انقطع لفترة (fallback فقط)
@@ -831,7 +987,18 @@ function broadcast() {
     };
   }
 
-  const payload = JSON.stringify(data);
+  const payload = JSON.stringify({ type: "status", data });
+
+  clients.forEach(ws => {
+    if (ws.readyState === 1) {
+      ws.send(payload);
+    }
+  });
+}
+
+// بث فوري لحدث جديد (تشغيل/إيقاف/خروج/إعادة تشغيل) لكل المتصلين
+function broadcastEvent(entry) {
+  const payload = JSON.stringify({ type: "event", data: entry });
 
   clients.forEach(ws => {
     if (ws.readyState === 1) {
