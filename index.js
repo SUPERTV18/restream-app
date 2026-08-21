@@ -395,21 +395,21 @@ app.get("/dashboard", (req, res) => {
 <style>
 
 :root{
---void:#0a0c10;
---panel:#12151c;
---panel-raised:#171b24;
---panel-inset:#0d0f15;
---hairline:#242a35;
---hairline-soft:#1a1e27;
---text:#e9ebf0;
---text-dim:#8890a0;
---text-faint:#565d6d;
---tally:#ff3b30;
---tally-dim:#3a1512;
---tally-glow:rgba(255,59,48,0.45);
---amber:#ffb020;
---cyan:#2fd3c8;
---off:#3d4453;
+--void:#121316;
+--panel:#1b1d22;
+--panel-raised:#23262d;
+--panel-inset:#0e0f12;
+--hairline:#2c2f37;
+--hairline-soft:#20232a;
+--text:#ece8e0;
+--text-dim:#9a968d;
+--text-faint:#605c54;
+--tally:#e8402f;
+--tally-dim:#3a1d16;
+--tally-glow:rgba(232,64,47,0.45);
+--amber:#ff9f1c;
+--gold:#c9a227;
+--off:#55524c;
 }
 
 *{
@@ -429,8 +429,8 @@ overflow-x:hidden;
 body{
 font-family:'Cairo',Arial,sans-serif;
 background:
-  radial-gradient(1200px 500px at 15% -10%, rgba(255,59,48,0.05), transparent),
-  radial-gradient(900px 500px at 100% 0%, rgba(47,211,200,0.05), transparent),
+  radial-gradient(1200px 500px at 15% -10%, rgba(232,64,47,0.05), transparent),
+  radial-gradient(900px 500px at 100% 0%, rgba(201,162,39,0.05), transparent),
   var(--void);
 color:var(--text);
 display:flex;
@@ -520,10 +520,10 @@ flex-direction:column;
 gap:8px;
 }
 
-.side .rackFoot button.go{background:rgba(47,211,200,0.08);color:var(--cyan);border:1px solid rgba(47,211,200,0.25);font-weight:700;}
-.side .rackFoot button.go:hover{background:rgba(47,211,200,0.16);}
-.side .rackFoot button.stop2{background:rgba(255,59,48,0.08);color:var(--tally);border:1px solid rgba(255,59,48,0.25);font-weight:700;}
-.side .rackFoot button.stop2:hover{background:rgba(255,59,48,0.16);}
+.side .rackFoot button.go{background:rgba(201,162,39,0.08);color:var(--gold);border:1px solid rgba(201,162,39,0.25);font-weight:700;}
+.side .rackFoot button.go:hover{background:rgba(201,162,39,0.16);}
+.side .rackFoot button.stop2{background:rgba(232,64,47,0.08);color:var(--tally);border:1px solid rgba(232,64,47,0.25);font-weight:700;}
+.side .rackFoot button.stop2:hover{background:rgba(232,64,47,0.16);}
 
 .main{
 flex:1;
@@ -575,7 +575,7 @@ transform:translateY(-2px);
 }
 
 .card.isLive{
-border-color:rgba(255,59,48,0.35);
+border-color:rgba(232,64,47,0.35);
 }
 
 .screen{
@@ -641,7 +641,7 @@ padding-left:20px;
 font-family:'IBM Plex Mono',monospace;
 font-size:20px;
 font-weight:600;
-color:var(--cyan);
+color:var(--gold);
 display:block;
 line-height:1.1;
 }
@@ -708,8 +708,8 @@ letter-spacing:0.2px;
 button:hover{filter:brightness(1.12)}
 button:active{transform:translateY(1px)}
 
-.start{background:rgba(47,211,200,0.12);color:var(--cyan);border-color:rgba(47,211,200,0.3)}
-.stop{background:rgba(255,59,48,0.12);color:var(--tally);border-color:rgba(255,59,48,0.3)}
+.start{background:rgba(201,162,39,0.12);color:var(--gold);border-color:rgba(201,162,39,0.3)}
+.stop{background:rgba(232,64,47,0.12);color:var(--tally);border-color:rgba(232,64,47,0.3)}
 .edit{background:var(--panel-raised);color:var(--text-dim);border-color:var(--hairline)}
 .del{background:transparent;color:var(--text-faint);border-color:var(--hairline)}
 
@@ -731,7 +731,7 @@ text-align:left;
 input::placeholder{ color:var(--text-faint); font-family:'Cairo',Arial,sans-serif; }
 
 input:focus{
-border-color:var(--cyan);
+border-color:var(--gold);
 }
 
 h3{margin:0;color:var(--text)}
@@ -757,8 +757,8 @@ z-index:999;
 border:1px solid;
 }
 
-.conn-ok{background:rgba(47,211,200,0.08);color:var(--cyan);border-color:rgba(47,211,200,0.3)}
-.conn-bad{background:rgba(255,59,48,0.08);color:var(--tally);border-color:rgba(255,59,48,0.3)}
+.conn-ok{background:rgba(201,162,39,0.08);color:var(--gold);border-color:rgba(201,162,39,0.3)}
+.conn-bad{background:rgba(232,64,47,0.08);color:var(--tally);border-color:rgba(232,64,47,0.3)}
 
 /* ---------- master control strip ---------- */
 
@@ -797,7 +797,7 @@ color:var(--text-faint);
 
 .statCard.live .num{color:var(--tally)}
 .statCard.off .num{color:var(--text-dim)}
-.statCard.info .num{color:var(--cyan)}
+.statCard.info .num{color:var(--gold)}
 .statCard.warn .num{color:var(--amber)}
 
 .toolbar{
@@ -896,7 +896,7 @@ border-bottom:1px solid var(--hairline-soft);
 }
 
 .logBody .logTime{
-color:var(--cyan);
+color:var(--gold);
 margin-left:8px;
 }
 
