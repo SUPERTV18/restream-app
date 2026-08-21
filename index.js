@@ -1,5 +1,6 @@
 import express from "express";
 import { spawn } from "child_process";
+import { WebSocketServer } from "ws";
 
 const app = express();
 app.use(express.json());
@@ -13,6 +14,9 @@ let viewers = {};
 
 // إجمالي المشاهدات (لا يتم تصفيره)
 let totalViews = {};
+
+// عملاء الـ WebSocket المتصلين بالداشبورد
+let clients = [];
 
 // ======================
 // 🎯 CHANNELS
@@ -145,37 +149,25 @@ function spawnStream(id) {
 
   ffmpegProcesses[id] = ffmpeg;
 
-  // 👁️ viewers fake stable
+  // متابعة عدد المشاهدين (تقريبي - غير مرتبط باتصالات فعلية)
   viewers[id] = Math.floor(Math.random() * 5) + 2;
 
-if(totalViews[id] == null){
-totalViews[id]=0;
-}
+  if (totalViews[id] == null) {
+    totalViews[id] = 0;
+  }
 
   if (viewerIntervals[id]) clearInterval(viewerIntervals[id]);
 
-  viewerIntervals[id] = setInterval(()=>{
+  viewerIntervals[id] = setInterval(() => {
+    const r = Math.random();
 
-const r=Math.random();
-
-if(r>0.7){
-
-viewers[id]++;
-
-totalViews[id]++;
-
-}
-
-else if(r<0.3){
-
-viewers[id]=Math.max(
-1,
-viewers[id]-1
-);
-
-}
-
-},5000);
+    if (r > 0.7) {
+      viewers[id]++;
+      totalViews[id]++;
+    } else if (r < 0.3) {
+      viewers[id] = Math.max(1, viewers[id] - 1);
+    }
+  }, 5000);
 
   ffmpeg.stderr.on("data", (d) => {
     console.log(`[${id}] ${d.toString()}`);
@@ -192,7 +184,7 @@ viewers[id]-1
       delete viewerIntervals[id];
     }
 
-    // safe restart
+    // إعادة تشغيل تلقائي
     setTimeout(() => {
       if (!ffmpegProcesses[id]) spawnStream(id);
     }, 8000);
@@ -240,10 +232,10 @@ app.get("/status", (req, res) => {
 
   for (const id in channels) {
     result[id] = {
-active: !!ffmpegProcesses[id],
-viewers: viewers[id] || 0,
-total: totalViews[id] || 0
-};
+      active: !!ffmpegProcesses[id],
+      viewers: viewers[id] || 0,
+      total: totalViews[id] || 0
+    };
   }
 
   res.json(result);
@@ -295,22 +287,12 @@ app.delete("/channel/:id", (req, res) => {
   res.json({ ok: true });
 });
 
-// ======================
-// 🚀 SERVER START
-// ======================
-const port = process.env.PORT || 3000;
-
-app.listen(port, () => {
-  console.log("🚀 IPTV PRO RUNNING ON PORT", port);
-});
-
 // ===============================
 // 📡 DASHBOARD PRO
 // ===============================
-app.get("/dashboard",(req,res)=>{
+app.get("/dashboard", (req, res) => {
 
-const html = `
-
+  const html = `
 <!DOCTYPE html>
 <html dir="rtl">
 
@@ -330,7 +312,6 @@ display:flex;
 min-height:100vh;
 }
 
-/* SIDE */
 .side{
 width:260px;
 background:rgba(16,25,56,0.9);
@@ -362,21 +343,18 @@ background:#2a3a6a;
 transform:scale(1.03);
 }
 
-/* MAIN */
 .main{
 flex:1;
 padding:20px;
 overflow:auto;
 }
 
-/* GRID */
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
 gap:18px;
 }
 
-/* CARD */
 .card{
 background:linear-gradient(145deg,#141d38,#101938);
 padding:18px;
@@ -403,11 +381,9 @@ height:3px;
 background:linear-gradient(90deg,#3da9fc,#00ff99);
 }
 
-/* STATUS */
 .live{color:#00ff99;font-weight:bold}
 .off{color:#ff4d4d;font-weight:bold}
 
-/* INFO */
 .info{
 margin-top:10px;
 font-size:13px;
@@ -415,7 +391,6 @@ color:#b8c1ec;
 word-break:break-all;
 }
 
-/* BUTTONS */
 .btns{
 display:flex;
 gap:8px;
@@ -439,7 +414,6 @@ button:hover{transform:scale(1.05)}
 .edit{background:#3498db;color:white}
 .del{background:#555;color:white}
 
-/* INPUT */
 input{
 width:100%;
 padding:12px;
@@ -455,7 +429,6 @@ input:focus{
 border:1px solid #3da9fc;
 }
 
-/* TITLE */
 h3{margin:0;color:#3da9fc}
 
 hr{
@@ -465,11 +438,27 @@ background:#26345f;
 margin:10px 0;
 }
 
+#connStatus{
+position:fixed;
+top:10px;
+left:10px;
+padding:6px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+z-index:999;
+}
+
+.conn-ok{background:#1db95433;color:#1db954;border:1px solid #1db954}
+.conn-bad{background:#e74c3c33;color:#e74c3c;border:1px solid #e74c3c}
+
 </style>
 
 </head>
 
 <body>
+
+<div id="connStatus" class="conn-bad">⏳ اتصال...</div>
 
 <div class="side">
 
@@ -502,7 +491,8 @@ margin:10px 0;
 
 <script>
 
-
+let channelsCache = {};
+let statusCache = {};
 
 function show(id){
 document.getElementById("channels").style.display="none";
@@ -510,23 +500,14 @@ document.getElementById("add").style.display="none";
 document.getElementById(id).style.display="block";
 }
 
-// 📊 FULL REFRESH
-async function load(){
-
-const ch = await fetch("/channels");
-const channels = await ch.json();
-
-const st = await fetch("/status");
-const status = await st.json();
+function render(){
 
 const box = document.getElementById("list");
-
 box.innerHTML = "";
 
-for(const id in channels){
+for(const id in channelsCache){
 
-const current =
-status[id]?.viewers || 0;
+const current = statusCache[id]?.viewers || 0;
 
 box.innerHTML += \`
 
@@ -534,62 +515,31 @@ box.innerHTML += \`
 
 <h3>📺 \${id}</h3>
 
-<div class="\${status[id]?.active ? 'live' : 'off'}">
-
-\${status[id]?.active
-? '🟢 LIVE'
-: '🔴 OFFLINE'}
-
+<div class="\${statusCache[id]?.active ? 'live' : 'off'}">
+\${statusCache[id]?.active ? '🟢 LIVE' : '🔴 OFFLINE'}
 </div>
 
 <div class="info">
-
-👁️ الحالي:
-<b>\${current}</b>
-
+👁️ الحالي: <b>\${current}</b>
 <br>
-
-📊 الإجمالي:
-<b>\${status[id]?.total || 0}</b>
-
+📊 الإجمالي: <b>\${statusCache[id]?.total || 0}</b>
 </div>
 
 <hr>
 
 <div class="info">
-<b>INPUT:</b>
-<br>
-\${channels[id].input}
+<b>INPUT:</b><br>\${channelsCache[id].input}
 </div>
 
 <div class="info">
-<b>OUTPUT:</b>
-<br>
-\${channels[id].output}
+<b>OUTPUT:</b><br>\${channelsCache[id].output}
 </div>
 
 <div class="btns">
-
-<button class="start"
-onclick="start('\${id}')">
-▶ تشغيل
-</button>
-
-<button class="stop"
-onclick="stop('\${id}')">
-⏹ إيقاف
-</button>
-
-<button class="edit"
-onclick="editChannel('\${id}')">
-✏ تعديل
-</button>
-
-<button class="del"
-onclick="del('\${id}')">
-🗑 حذف
-</button>
-
+<button class="start" onclick="start('\${id}')">▶ تشغيل</button>
+<button class="stop" onclick="stop('\${id}')">⏹ إيقاف</button>
+<button class="edit" onclick="editChannel('\${id}')">✏ تعديل</button>
+<button class="del" onclick="del('\${id}')">🗑 حذف</button>
 </div>
 
 </div>
@@ -599,6 +549,50 @@ onclick="del('\${id}')">
 }
 
 }
+
+// تحميل كامل (channels + status) - يُستخدم عند فتح الصفحة أو بعد أي تعديل
+async function load(){
+const ch = await fetch("/channels");
+channelsCache = await ch.json();
+
+const st = await fetch("/status");
+statusCache = await st.json();
+
+render();
+}
+
+// ============================
+// 🔌 WebSocket - تحديث لحظي لعدد المشاهدين وحالة البث
+// ============================
+let ws;
+let wsReconnectTimer;
+
+function connectWS(){
+const proto = location.protocol === "https:" ? "wss:" : "ws:";
+ws = new WebSocket(proto + "//" + location.host);
+
+ws.onopen = () => {
+document.getElementById("connStatus").className = "conn-ok";
+document.getElementById("connStatus").innerText = "🟢 متصل مباشر";
+};
+
+ws.onclose = () => {
+document.getElementById("connStatus").className = "conn-bad";
+document.getElementById("connStatus").innerText = "🔴 منقطع - إعادة محاولة...";
+clearTimeout(wsReconnectTimer);
+wsReconnectTimer = setTimeout(connectWS, 3000);
+};
+
+ws.onerror = () => ws.close();
+
+ws.onmessage = (msg) => {
+try{
+statusCache = JSON.parse(msg.data);
+render();
+}catch(e){}
+};
+}
+
 // ▶ actions
 async function start(id){
 await fetch("/start?id="+id);
@@ -611,12 +605,9 @@ load();
 }
 
 async function addChannel(){
-
 await fetch("/channel",{
 method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
+headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
 id:id.value,
 input:input.value,
@@ -626,94 +617,67 @@ output:output.value
 
 load();
 show("channels");
-
 }
 
 async function del(id){
-
-await fetch(
-"/channel/"+id,
-{
-method:"DELETE"
-}
-);
-
+await fetch("/channel/"+id,{ method:"DELETE" });
 load();
-
 }
 
 async function editChannel(id){
+const r = await fetch("/channels");
+const data = await r.json();
 
-const r =
-await fetch("/channels");
+const inputVal = prompt("Input", data[id].input);
+if(!inputVal) return;
 
-const data =
-await r.json();
+const outputVal = prompt("Output", data[id].output);
+if(!outputVal) return;
 
-const inputVal =
-prompt(
-"Input",
-data[id].input
-);
-
-if(!inputVal)
-return;
-
-const outputVal =
-prompt(
-"Output",
-data[id].output
-);
-
-if(!outputVal)
-return;
-
-await fetch(
-"/channel/"+id,
-{
+await fetch("/channel/"+id,{
 method:"PUT",
-headers:{
-"Content-Type":"application/json"
-},
+headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
 input:inputVal,
 output:outputVal
 })
-}
-);
+});
 
 load();
-
 }
 
-// 🚀 initial load
+// 🚀 بداية التشغيل
 load();
+connectWS();
 
-setInterval(load,3000);
+// تحديث احتياطي لو الـ WebSocket انقطع لفترة (fallback فقط)
+setInterval(()=>{
+if(!ws || ws.readyState !== 1) load();
+}, 5000);
 
 </script>
 
 </body>
 </html>
-
 `;
 
-res.send(html);
+  res.send(html);
 
+});
+
+// ======================
+// 🚀 SERVER START (مرة واحدة فقط)
+// ======================
+const port = process.env.PORT || 3000;
+
+const server = app.listen(port, () => {
+  console.log("🚀 IPTV PRO RUNNING ON PORT", port);
 });
 
 // ===============================
-// 🚀 WebSocket server
+// 📡 WebSocket server (متصل بنفس الـ HTTP server)
 // ===============================
-const server = app.listen(process.env.PORT || 3000, () => {
-  console.log("🚀 RUNNING PRO");
-});
-
-server.on("upgrade", (req, socket, head) => {
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    wss.emit("connection", ws, req);
-  });
-});
+const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
   clients.push(ws);
@@ -721,22 +685,29 @@ wss.on("connection", (ws) => {
   ws.on("close", () => {
     clients = clients.filter(c => c !== ws);
   });
+
+  ws.on("error", () => {
+    clients = clients.filter(c => c !== ws);
+  });
 });
 
-// broadcast
+// بث دوري لحالة القنوات لكل المتصلين
 function broadcast() {
   const data = {};
 
   for (const id in channels) {
     data[id] = {
       active: !!ffmpegProcesses[id],
-      viewers: viewers[id] || 0
+      viewers: viewers[id] || 0,
+      total: totalViews[id] || 0
     };
   }
 
+  const payload = JSON.stringify(data);
+
   clients.forEach(ws => {
     if (ws.readyState === 1) {
-      ws.send(JSON.stringify(data));
+      ws.send(payload);
     }
   });
 }
