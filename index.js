@@ -12,6 +12,18 @@ let ffmpegProcesses = {};
 let viewerIntervals = {};
 let viewers = {};
 
+// آخر سطور ffmpeg لكل قناة (لعرضها في اللوحة)
+let ffmpegLogs = {};
+const MAX_LOG_LINES = 300;
+
+function pushLog(id, line) {
+  if (!ffmpegLogs[id]) ffmpegLogs[id] = [];
+  ffmpegLogs[id].push({ line, time: new Date().toISOString() });
+  if (ffmpegLogs[id].length > MAX_LOG_LINES) {
+    ffmpegLogs[id] = ffmpegLogs[id].slice(-MAX_LOG_LINES);
+  }
+}
+
 // إجمالي المشاهدات (لا يتم تصفيره)
 let totalViews = {};
 
@@ -192,7 +204,14 @@ function spawnStream(id) {
   }, 5000);
 
   ffmpeg.stderr.on("data", (d) => {
-    console.log(`[${id}] ${d.toString()}`);
+    const text = d.toString();
+    console.log(`[${id}] ${text}`);
+
+    // نقسم الناتج لأسطر ونحفظها في لوج القناة
+    text.split("\n").forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed) pushLog(id, trimmed);
+    });
   });
 
   ffmpeg.on("exit", () => {
@@ -282,6 +301,14 @@ app.get("/stop-all", (req, res) => {
 // ======================
 app.get("/events", (req, res) => {
   res.json(eventLog);
+});
+
+// ======================
+// 📄 لوج ffmpeg لكل قناة
+// ======================
+app.get("/logs/:id", (req, res) => {
+  const id = req.params.id;
+  res.json(ffmpegLogs[id] || []);
 });
 
 // ======================
@@ -584,6 +611,76 @@ cursor:pointer;
 }
 
 /* ======================
+   📄 LOG MODAL
+   ====================== */
+
+.logOverlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.7);
+z-index:2000;
+align-items:center;
+justify-content:center;
+padding:20px;
+}
+
+.logOverlay.show{
+display:flex;
+}
+
+.logModal{
+background:#0f1733;
+border:1px solid #26345f;
+border-radius:18px;
+width:100%;
+max-width:800px;
+max-height:80vh;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+}
+
+.logHeader{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px 18px;
+border-bottom:1px solid #26345f;
+}
+
+.logHeader h3{
+margin:0;
+}
+
+.logHeader button{
+padding:8px 14px;
+color:white;
+}
+
+.logBody{
+padding:14px 18px;
+overflow-y:auto;
+font-family:monospace;
+font-size:12px;
+color:#b8c1ec;
+white-space:pre-wrap;
+word-break:break-all;
+direction:ltr;
+text-align:left;
+}
+
+.logBody .logLine{
+padding:3px 0;
+border-bottom:1px solid #1d2b56;
+}
+
+.logBody .logTime{
+color:#3da9fc;
+margin-left:8px;
+}
+
+/* ======================
    📱 MOBILE / RESPONSIVE
    ====================== */
 
@@ -769,6 +866,23 @@ flex:1 1 100%;
 
 </div>
 
+<div class="logOverlay" id="logOverlay" onclick="closeLogs(event)">
+<div class="logModal" onclick="event.stopPropagation()">
+
+<div class="logHeader">
+<h3 id="logTitle">📄 اللوج</h3>
+<button onclick="closeLogs()" style="background:#555">✕ إغلاق</button>
+</div>
+
+<div class="logBody" id="logBody"></div>
+
+<div class="logHeader">
+<button onclick="refreshLogs()" style="background:#3498db">🔄 تحديث</button>
+</div>
+
+</div>
+</div>
+
 <script>
 
 let channelsCache = {};
@@ -907,6 +1021,7 @@ box.innerHTML += \`
 <button class="stop" onclick="stop('\${id}')">⏹ إيقاف</button>
 <button class="edit" onclick="editChannel('\${id}')">✏ تعديل</button>
 <button class="del" onclick="del('\${id}')">🗑 حذف</button>
+<button class="edit" onclick="showLogs('\${id}')">📄 اللوج</button>
 </div>
 
 </div>
@@ -977,6 +1092,42 @@ box.innerHTML += \`
 function onSearch(val){
 searchTerm = val;
 render();
+}
+
+let currentLogChannel = null;
+
+async function showLogs(id){
+currentLogChannel = id;
+document.getElementById("logTitle").innerText = "📄 لوج القناة: " + id;
+document.getElementById("logOverlay").classList.add("show");
+await refreshLogs();
+}
+
+function closeLogs(e){
+if(e && e.target !== document.getElementById("logOverlay")) return;
+document.getElementById("logOverlay").classList.remove("show");
+currentLogChannel = null;
+}
+
+async function refreshLogs(){
+if(!currentLogChannel) return;
+
+const r = await fetch("/logs/" + currentLogChannel);
+const lines = await r.json();
+
+const body = document.getElementById("logBody");
+
+if(lines.length === 0){
+body.innerHTML = '<div class="logLine">لا يوجد سجل بعد لهذه القناة.</div>';
+return;
+}
+
+body.innerHTML = lines.map(l => {
+const t = new Date(l.time).toLocaleTimeString("en-GB");
+return '<div class="logLine"><span class="logTime">[' + t + ']</span>' + l.line.replace(/</g,"&lt;") + '</div>';
+}).join("");
+
+body.scrollTop = body.scrollHeight;
 }
 
 async function startAll(){
