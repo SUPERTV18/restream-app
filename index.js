@@ -53,62 +53,90 @@ function logEvent(id, type, message) {
 
 // ======================
 // 🎯 CHANNELS
+// كل قناة ممكن يكون ليها: input, output, logo (رابط صورة), category (تصنيف)
 // ======================
 const channels = {
   ch4k: {
     input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
-    output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0"
+    output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0",
+    logo: "logo4kh.png",
+    category: ""
   },
   ch1: {
     input: "https://163.ostv.info/krikar/krikar/652333?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
-    output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm"
+    output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm",
+    logo: "logo1.png",
+    category: ""
   },
   ch2: {
     input: "https://163.ostv.info/krikar/krikar/652334?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
-    output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy"
+    output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy",
+    logo: "logo22.png",
+    category: ""
   },
   ch3: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://msk.goodgame.ru:1940/live/221746?pwd=5dfed73aa7930d86"
+    output: "rtmp://msk.goodgame.ru:1940/live/221746?pwd=5dfed73aa7930d86",
+    logo: "logo33.png",
+    category: ""
   },
   ch4: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
-    output: "rtmp://fr.pscp.tv:80/x/ivphyvtww7k3"
+    output: "rtmp://fr.pscp.tv:80/x/ivphyvtww7k3",
+    logo: "logo44.png",
+    category: ""
   },
   ch5: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/14863707479574_16379956300310_uoslkp4xrm"
+    output: "rtmp://vsu.okcdn.ru/input/14863707479574_16379956300310_uoslkp4xrm",
+    logo: "logo55.png",
+    category: ""
   },
   ch6: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/14901168119318_16447213341206_ssfncxg2zu"
+    output: "rtmp://vsu.okcdn.ru/input/14901168119318_16447213341206_ssfncxg2zu",
+    logo: "logo66.png",
+    category: ""
   },
   ch7: {
     input: "https://stream.camcloud.stream/stream/97e7e9e05d4e/playlist.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/13415538433558_13690939181590_flxfen3y2u"
+    output: "rtmp://vsu.okcdn.ru/input/13415538433558_13690939181590_flxfen3y2u",
+    logo: "quran.png",
+    category: "دينية"
   },
   ch8: {
     input: "https://man1ted.com/watch/beemax1.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/9978322492950_8842256321046_oxg7ed4dcm"
+    output: "rtmp://vsu.okcdn.ru/input/9978322492950_8842256321046_oxg7ed4dcm",
+    logo: "aflam.png",
+    category: "أفلام"
   },
   ch9: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/13418102398486_13695919458838_h7ihlwq5ca"
+    output: "rtmp://vsu.okcdn.ru/input/13418102398486_13695919458838_h7ihlwq5ca",
+    logo: "mosalsalat.png",
+    category: "مسلسلات"
   },
   ch10: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/14994479390230_16613027809814_7sovqbfsba"
+    output: "rtmp://vsu.okcdn.ru/input/14994479390230_16613027809814_7sovqbfsba",
+    logo: "animy.png",
+    category: "أنمي"
   },
   ch11: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/14994482273814_16613032593942_cmf7uzoh2q"
+    output: "rtmp://vsu.okcdn.ru/input/14994482273814_16613032593942_cmf7uzoh2q",
+    logo: "kids.png",
+    category: "أطفال"
   }
 };
 
 // ======================
-// 🎬 LOGO
+// 🎬 LOGO (fallback ثابت لو القناة مالهاش لوجو محدد)
 // ======================
 function getLogo(id) {
+  const ch = channels[id];
+  if (ch && ch.logo) return ch.logo;
+
   const logos = {
     ch4k: "logo4kh.png",
     ch1: "logo1.png",
@@ -207,7 +235,6 @@ function spawnStream(id) {
     const text = d.toString();
     console.log(`[${id}] ${text}`);
 
-    // نقسم الناتج لأسطر ونحفظها في لوج القناة
     text.split("\n").forEach(line => {
       const trimmed = line.trim();
       if (trimmed) pushLog(id, trimmed);
@@ -226,7 +253,6 @@ function spawnStream(id) {
       delete viewerIntervals[id];
     }
 
-    // إعادة تشغيل تلقائي
     setTimeout(() => {
       if (!ffmpegProcesses[id]) {
         logEvent(id, "restart", "إعادة تشغيل تلقائية بعد التوقف");
@@ -270,9 +296,6 @@ app.get("/stop", (req, res) => {
   res.send("stopped " + id);
 });
 
-// ======================
-// ▶⏹ تشغيل / إيقاف كل القنوات دفعة واحدة
-// ======================
 app.get("/start-all", (req, res) => {
   for (const id in channels) {
     spawnStream(id);
@@ -296,24 +319,15 @@ app.get("/stop-all", (req, res) => {
   res.json({ ok: true });
 });
 
-// ======================
-// 📜 سجل الأحداث
-// ======================
 app.get("/events", (req, res) => {
   res.json(eventLog);
 });
 
-// ======================
-// 📄 لوج ffmpeg لكل قناة
-// ======================
 app.get("/logs/:id", (req, res) => {
   const id = req.params.id;
   res.json(ffmpegLogs[id] || []);
 });
 
-// ======================
-// 📊 STATUS
-// ======================
 app.get("/status", (req, res) => {
   const result = {};
 
@@ -328,20 +342,22 @@ app.get("/status", (req, res) => {
   res.json(result);
 });
 
-// ======================
-// 📺 CHANNELS API
-// ======================
 app.get("/channels", (req, res) => {
   res.json(channels);
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output } = req.body;
+  const { id, input, output, logo, category } = req.body;
 
   if (!id || !input || !output)
     return res.status(400).json({ ok: false });
 
-  channels[id] = { input, output };
+  channels[id] = {
+    input,
+    output,
+    logo: logo || "",
+    category: category || ""
+  };
 
   res.json({ ok: true });
 });
@@ -355,7 +371,9 @@ app.put("/channel/:id", (req, res) => {
   channels[id] = {
     ...channels[id],
     input: req.body.input ?? channels[id].input,
-    output: req.body.output ?? channels[id].output
+    output: req.body.output ?? channels[id].output,
+    logo: req.body.logo ?? channels[id].logo,
+    category: req.body.category ?? channels[id].category
   };
 
   res.json({ ok: true });
@@ -386,482 +404,420 @@ app.get("/dashboard", (req, res) => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>لوحة التحكم الرئيسية · Master Control</title>
+<title>لوحة تحكم القنوات</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
 
 <style>
 
 :root{
---bg:#0b0d10;
---surface:#12151a;
---surface-2:#181c22;
---surface-3:#1e232a;
---line:#242931;
---line-soft:#1a1e24;
---text:#d7dce1;
---text-2:#8b929b;
---text-3:#565c65;
---ok-rgb:62,207,110;
---fault-rgb:229,72,77;
---warn-rgb:242,169,59;
---accent-rgb:91,141,238;
---off:#4a505a;
---shadow:0 10px 30px rgba(0,0,0,0.35);
-}
-
-html[data-theme="amber"]{
---bg:#0d0a06;
---surface:#161108;
---surface-2:#1d160c;
---surface-3:#241b0f;
---line:#332510;
---line-soft:#241b0f;
---text:#f2e4c8;
---text-2:#a68f66;
---text-3:#6b5a3c;
---ok-rgb:242,169,59;
---fault-rgb:224,90,45;
---warn-rgb:255,196,0;
---accent-rgb:242,169,59;
---off:#4a3f2c;
-}
-
-html[data-theme="arctic"]{
---bg:#f0f2f5;
---surface:#ffffff;
---surface-2:#f4f6f8;
---surface-3:#eaedf1;
---line:#dde1e6;
---line-soft:#e8eaed;
---text:#1c232b;
---text-2:#5b6572;
---text-3:#8791a0;
---ok-rgb:22,142,74;
---fault-rgb:196,40,48;
---warn-rgb:181,105,10;
---accent-rgb:34,92,201;
---off:#c3c9d1;
---shadow:0 8px 24px rgba(30,40,60,0.08);
-}
-
-html[data-theme="crimson"]{
---bg:#0c0a0b;
---surface:#161113;
---surface-2:#1d1517;
---surface-3:#24191c;
---line:#33191d;
---line-soft:#241518;
---text:#e9dcdc;
---text-2:#9c8386;
---text-3:#65484b;
---ok-rgb:62,207,110;
---fault-rgb:235,64,52;
---warn-rgb:242,169,59;
---accent-rgb:235,64,52;
---off:#4a3438;
+--page:#F5F6F8;
+--surface:#FFFFFF;
+--surface-2:#FAFBFC;
+--border:#E4E7EC;
+--border-strong:#D0D5DD;
+--text:#101828;
+--text-2:#475467;
+--text-3:#98A2B3;
+--accent:#2563EB;
+--accent-bg:#EFF4FF;
+--success:#16A34A;
+--success-bg:#EDFAF1;
+--danger:#DC2626;
+--danger-bg:#FDEDEC;
+--warning:#D97706;
+--warning-bg:#FEF6E7;
+--radius:10px;
+--radius-lg:14px;
 }
 
 *{ box-sizing:border-box; }
 
 html, body{ margin:0; padding:0; overflow-x:hidden; }
 
-@media (prefers-reduced-motion: reduce){
-*{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
-}
-
 body{
-font-family:'IBM Plex Sans Arabic','IBM Plex Mono',Arial,sans-serif;
-background:var(--bg);
+font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
+background:var(--page);
 color:var(--text);
 min-height:100vh;
 min-height:100dvh;
-transition:background 0.2s, color 0.2s;
 }
 
-::selection{ background:rgb(var(--accent-rgb)); color:#0b0d10; }
-
-:focus-visible{ outline:2px solid rgb(var(--accent-rgb)); outline-offset:2px; }
-
-.mono{ font-family:'IBM Plex Mono',monospace; }
+.mono{ font-family:'IBM Plex Mono', monospace; }
 
 .app{ display:flex; min-height:100vh; min-height:100dvh; }
 
-/* ---------- icon rail ---------- */
+/* ---------- sidebar ---------- */
 
 .side{
-width:74px;
+width:240px;
 flex-shrink:0;
 background:var(--surface);
-border-left:1px solid var(--line);
+border-left:1px solid var(--border);
 display:flex;
 flex-direction:column;
-align-items:center;
-padding:18px 0;
-transition:transform 0.25s, background 0.2s;
+padding:20px 16px;
+transition:transform 0.25s;
 z-index:1000;
 }
 
-.side .brandMark{
+.brand{
+display:flex;
+align-items:center;
+gap:10px;
+padding:0 6px 20px 6px;
+margin-bottom:16px;
+border-bottom:1px solid var(--border);
+}
+
+.brand .mark{
 width:34px;
 height:34px;
-border-radius:8px;
-background:var(--surface-3);
-border:1px solid var(--line);
+border-radius:9px;
+background:var(--accent-bg);
+color:var(--accent);
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:15px;
-margin-bottom:22px;
-color:rgb(var(--accent-rgb));
+font-size:17px;
+flex-shrink:0;
 }
 
-.side nav{
-display:flex;
-flex-direction:column;
-gap:6px;
-width:100%;
-align-items:center;
+.brand .word{ font-weight:600; font-size:15px; }
+.brand .word small{ display:block; font-size:11px; color:var(--text-3); font-weight:400; margin-top:1px; }
+
+.navLabel{
+font-size:11px;
+color:var(--text-3);
+padding:0 8px 6px 8px;
+margin-top:10px;
+font-weight:500;
 }
 
 .side button{
-width:52px;
-height:52px;
-border:1px solid transparent;
-border-radius:9px;
-background:transparent;
-color:var(--text-3);
-cursor:pointer;
-font-size:18px;
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-gap:3px;
-transition:0.15s;
-}
-
-.side button .navLbl{
-font-size:9px;
-font-family:'IBM Plex Mono',monospace;
-letter-spacing:0.3px;
-}
-
-.side button:hover{ background:var(--surface-2); color:var(--text); }
-.side button.navActive{ background:var(--surface-3); color:rgb(var(--accent-rgb)); border-color:var(--line); }
-
-.side .railFoot{
-margin-top:auto;
-display:flex;
-flex-direction:column;
-gap:8px;
 width:100%;
+display:flex;
 align-items:center;
+gap:10px;
+padding:10px 12px;
+margin-bottom:2px;
+border:none;
+border-radius:var(--radius);
+background:transparent;
+color:var(--text-2);
+font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
+font-weight:500;
+font-size:14px;
+cursor:pointer;
+text-align:right;
+transition:0.12s;
 }
 
-.side .railFoot button.go{ color:rgb(var(--ok-rgb)); }
-.side .railFoot button.stopAll{ color:rgb(var(--fault-rgb)); }
+.side button i{ font-size:17px; color:var(--text-3); }
+
+.side button:hover{ background:var(--surface-2); }
+.side button.navActive{ background:var(--accent-bg); color:var(--accent); }
+.side button.navActive i{ color:var(--accent); }
+
+.side .foot{ margin-top:auto; padding-top:14px; border-top:1px solid var(--border); }
+
+.side .goBtn{ color:var(--success); }
+.side .goBtn i{ color:var(--success); }
+.side .stopBtn{ color:var(--danger); }
+.side .stopBtn i{ color:var(--danger); }
 
 /* ---------- workspace ---------- */
 
 .workspace{ flex:1; display:flex; flex-direction:column; min-width:0; }
 
 .topbar{
-height:58px;
+height:60px;
 flex-shrink:0;
-border-bottom:1px solid var(--line);
 background:var(--surface);
+border-bottom:1px solid var(--border);
 display:flex;
 align-items:center;
 justify-content:space-between;
-padding:0 22px;
-gap:16px;
-transition:background 0.2s;
+padding:0 24px;
 }
 
-.topbar .titleBlock{ display:flex; flex-direction:column; line-height:1.25; }
-.topbar .titleBlock .t1{ font-size:14px; font-weight:700; color:var(--text); }
-.topbar .titleBlock .t2{ font-size:10px; color:var(--text-3); font-family:'IBM Plex Mono',monospace; letter-spacing:1px; }
-
-.topbar .metaRight{ display:flex; align-items:center; gap:10px; }
-
-.iconBtn{
-width:36px;
-height:36px;
-display:flex;
-align-items:center;
-justify-content:center;
-border-radius:7px;
-border:1px solid var(--line);
-background:var(--surface-2);
-color:var(--text-2);
-cursor:pointer;
-font-size:15px;
-padding:0;
-transition:0.15s;
-}
-
-.iconBtn:hover{ color:var(--text); border-color:rgb(var(--accent-rgb)); }
-
-.clock{
-font-family:'IBM Plex Mono',monospace;
-font-size:19px;
-font-weight:500;
-color:var(--text);
-letter-spacing:1px;
-padding:6px 12px;
-background:var(--surface-2);
-border:1px solid var(--line);
-border-radius:7px;
-}
+.topbar h1{ font-size:16px; font-weight:600; margin:0; }
 
 .pill{
-padding:6px 12px;
+display:inline-flex;
+align-items:center;
+gap:6px;
+padding:5px 12px;
 border-radius:20px;
-font-size:11px;
-font-family:'IBM Plex Mono',monospace;
-letter-spacing:0.3px;
-border:1px solid;
+font-size:12px;
+font-weight:500;
 }
 
-.conn-ok{ background:rgba(var(--ok-rgb),0.12); color:rgb(var(--ok-rgb)); border-color:rgba(var(--ok-rgb),0.35); }
-.conn-bad{ background:rgba(var(--fault-rgb),0.12); color:rgb(var(--fault-rgb)); border-color:rgba(var(--fault-rgb),0.35); }
+.pill i{ font-size:14px; }
 
-.content{ flex:1; padding:22px 26px 30px 26px; overflow:auto; }
+.conn-ok{ background:var(--success-bg); color:var(--success); }
+.conn-bad{ background:var(--danger-bg); color:var(--danger); }
 
-/* ---------- status strip ---------- */
+.content{ flex:1; padding:24px; overflow:auto; }
 
-.statusStrip{
+/* ---------- stat cards ---------- */
+
+.statGrid{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:1px;
-background:var(--line);
-border:1px solid var(--line);
-border-radius:10px;
-overflow:hidden;
-margin-bottom:18px;
-box-shadow:var(--shadow);
+grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+gap:12px;
+margin-bottom:20px;
 }
 
-.stat{
+.statCard{
 background:var(--surface);
-padding:14px 18px;
-transition:background 0.2s;
+border:1px solid var(--border);
+border-radius:var(--radius-lg);
+padding:16px 18px;
 }
 
-.stat .num{ font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; line-height:1; display:block; margin-bottom:4px; }
-.stat .lbl{ font-size:10.5px; color:var(--text-3); letter-spacing:0.4px; font-family:'IBM Plex Mono',monospace; }
+.statCard .lbl{ font-size:12.5px; color:var(--text-2); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.statCard .lbl i{ font-size:15px; }
+.statCard .num{ font-size:26px; font-weight:600; font-family:'IBM Plex Mono', monospace; }
 
-.stat.ok .num{ color:rgb(var(--ok-rgb)); }
-.stat.off .num{ color:var(--text-2); }
-.stat.accent .num{ color:rgb(var(--accent-rgb)); }
-.stat.warn .num{ color:rgb(var(--warn-rgb)); }
+.statCard.ok .num{ color:var(--success); }
+.statCard.off .num{ color:var(--text-2); }
+.statCard.accent .num{ color:var(--accent); }
+.statCard.warn .num{ color:var(--warning); }
 
 /* ---------- toolbar ---------- */
 
-.toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.toolbar{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
 
 .toolbar input, .toolbar select{
-font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
+font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
 padding:10px 14px;
-border-radius:7px;
-border:1px solid var(--line);
-background:var(--surface-2);
+border-radius:var(--radius);
+border:1px solid var(--border);
+background:var(--surface);
 color:var(--text);
 outline:none;
-font-size:13px;
+font-size:13.5px;
 }
 
-.toolbar input{ flex:1 1 260px; }
-.toolbar select{ flex:0 1 220px; cursor:pointer; }
-.toolbar input:focus, .toolbar select:focus{ border-color:rgb(var(--accent-rgb)); }
+.toolbar input{ flex:1 1 240px; }
+.toolbar select{ flex:0 1 190px; cursor:pointer; }
+.toolbar input:focus, .toolbar select:focus{ border-color:var(--accent); }
 
-/* ---------- channel cards (multiviewer wall) ---------- */
+/* ---------- channel cards ---------- */
 
 .grid{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(272px,1fr));
-gap:16px;
+grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+gap:14px;
 }
 
 .card{
 background:var(--surface);
-border:1px solid var(--line);
-border-radius:12px;
+border:1px solid var(--border);
+border-radius:var(--radius-lg);
+padding:16px;
+transition:0.15s;
+}
+
+.card:hover{ border-color:var(--border-strong); box-shadow:0 1px 3px rgba(16,24,40,0.06); }
+
+.cardHead{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+
+.logoBox{
+width:38px;
+height:38px;
+border-radius:9px;
+background:var(--surface-2);
+border:1px solid var(--border);
+flex-shrink:0;
 overflow:hidden;
-transition:0.2s;
-box-shadow:var(--shadow);
-position:relative;
-}
-
-.card:hover{ transform:translateY(-3px); border-color:rgba(var(--accent-rgb),0.4); }
-.card.isLive{ border-color:rgba(var(--ok-rgb),0.35); }
-
-.screen{
-position:relative;
-aspect-ratio:16/9;
-padding:13px 15px;
 display:flex;
-flex-direction:column;
-justify-content:space-between;
-background:
-  repeating-linear-gradient(180deg, rgba(255,255,255,0.014) 0px, rgba(255,255,255,0.014) 1px, transparent 1px, transparent 3px),
-  var(--bg);
-border-bottom:1px solid var(--line);
-}
-
-.dot{ position:absolute; top:12px; left:13px; width:9px; height:9px; border-radius:50%; background:var(--off); }
-.dot.on{ background:rgb(var(--ok-rgb)); box-shadow:0 0 9px 2px rgba(var(--ok-rgb),0.5); animation:dotPulse 2.2s ease-in-out infinite; }
-
-@keyframes dotPulse{ 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-
-.chName{
-font-family:'IBM Plex Mono',monospace;
-font-weight:600;
-font-size:20px;
-color:var(--text);
-padding-right:16px;
-letter-spacing:0.3px;
-}
-
-.statusTxt{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1px; margin-top:2px; display:block; }
-.statusTxt.on{ color:rgb(var(--ok-rgb)); }
-.statusTxt.off{ color:var(--text-3); }
-
-.readout{ display:flex; gap:20px; }
-.readout .rNum{ font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:rgb(var(--accent-rgb)); display:block; line-height:1; }
-.readout .rNum.dim{ color:var(--text-3); }
-.readout .rLbl{ font-size:9.5px; color:var(--text-3); letter-spacing:0.4px; }
-
-.cardBody{ padding:13px 15px 15px 15px; }
-
-.info{ margin-bottom:9px; font-size:11.5px; }
-.info b{
-display:block;
-font-family:'IBM Plex Mono',monospace;
-font-size:9px;
-letter-spacing:1.2px;
+align-items:center;
+justify-content:center;
 color:var(--text-3);
-margin-bottom:2px;
-font-weight:500;
+font-size:16px;
 }
-.info span{
-font-family:'IBM Plex Mono',monospace;
-font-size:11px;
-color:var(--text-2);
+
+.logoBox img{ width:100%; height:100%; object-fit:cover; }
+
+.cardHead .titleWrap{ flex:1; min-width:0; }
+
+.cardHead h3{
+margin:0;
+font-family:'IBM Plex Mono', monospace;
+font-size:15px;
+font-weight:600;
 direction:ltr;
-display:block;
 text-align:left;
 overflow:hidden;
 text-overflow:ellipsis;
 white-space:nowrap;
 }
 
-.btns{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-
-button{
-font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
-padding:8px 10px;
-border:1px solid var(--line);
-border-radius:6px;
-cursor:pointer;
-font-weight:600;
-font-size:12px;
-background:var(--surface-2);
-color:var(--text-2);
-transition:0.15s;
-white-space:nowrap;
-flex:1 1 auto;
+.catTag{
+display:inline-block;
+font-size:10.5px;
+color:var(--text-3);
+margin-top:2px;
 }
 
-button:hover{ filter:brightness(1.2); }
-button:active{ transform:translateY(1px); }
+.statusPill{
+font-size:11px;
+font-weight:600;
+padding:4px 9px;
+border-radius:6px;
+display:inline-flex;
+align-items:center;
+gap:4px;
+flex-shrink:0;
+}
 
-.btns .start{ color:rgb(var(--ok-rgb)); border-color:rgba(var(--ok-rgb),0.35); }
-.btns .stop{ color:rgb(var(--fault-rgb)); border-color:rgba(var(--fault-rgb),0.35); }
-.btns .del{ color:var(--text-3); flex:0 0 auto; }
+.statusPill.on{ background:var(--success-bg); color:var(--success); }
+.statusPill.off{ background:var(--surface-2); color:var(--text-3); }
+.statusPill i{ font-size:8px; }
+
+.readoutRow{ display:flex; gap:10px; margin-bottom:12px; }
+
+.readoutBox{
+flex:1;
+background:var(--surface-2);
+border-radius:8px;
+padding:8px 10px;
+}
+
+.readoutBox .rLbl{ font-size:10px; color:var(--text-3); margin-bottom:2px; }
+.readoutBox .rVal{ font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; }
+
+.techLine{ margin-bottom:7px; }
+.techLine .tLbl{ font-size:10px; color:var(--text-3); margin-bottom:2px; }
+.techLine .tVal{
+font-family:'IBM Plex Mono', monospace;
+font-size:11px;
+color:var(--text-2);
+direction:ltr;
+text-align:left;
+display:block;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+}
+
+.btnRow{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+
+.iBtn{
+width:32px;
+height:32px;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:8px;
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text-2);
+cursor:pointer;
+font-size:15px;
+transition:0.12s;
+}
+
+.iBtn:hover{ border-color:var(--border-strong); background:var(--surface-2); }
+.iBtn.go{ color:var(--success); }
+.iBtn.stop{ color:var(--danger); }
 
 /* ---------- add channel form ---------- */
 
 .formCard{
-max-width:480px;
+max-width:460px;
 background:var(--surface);
-border:1px solid var(--line);
-border-radius:10px;
+border:1px solid var(--border);
+border-radius:var(--radius-lg);
 padding:22px;
-box-shadow:var(--shadow);
 }
 
 .formCard label{
 display:block;
-font-family:'IBM Plex Mono',monospace;
-font-size:10px;
-letter-spacing:0.6px;
-color:var(--text-3);
+font-size:12.5px;
+color:var(--text-2);
 margin-bottom:6px;
 margin-top:14px;
+font-weight:500;
 }
 
 .formCard label:first-of-type{ margin-top:0; }
 
 .formCard input{
 width:100%;
-padding:11px 13px;
-border-radius:7px;
-border:1px solid var(--line);
-background:var(--surface-2);
+padding:10px 13px;
+border-radius:var(--radius);
+border:1px solid var(--border);
+background:var(--surface);
 color:var(--text);
 outline:none;
-font-family:'IBM Plex Mono',monospace;
+font-family:'IBM Plex Mono', monospace;
 font-size:13px;
 direction:ltr;
 text-align:left;
 }
 
-.formCard input:focus{ border-color:rgb(var(--accent-rgb)); }
+.formCard input:focus{ border-color:var(--accent); }
+
+.formCard .hint{ font-size:11px; color:var(--text-3); margin-top:4px; }
 
 .formCard .submit{
 margin-top:20px;
 width:100%;
-background:rgb(var(--accent-rgb));
-color:#0b0d10;
+background:var(--accent);
+color:#fff;
 border:none;
-padding:12px;
-font-size:13px;
+border-radius:var(--radius);
+padding:11px;
+font-size:14px;
+font-weight:600;
+cursor:pointer;
 }
 
-/* ---------- panel (events list) ---------- */
+/* ---------- events panel ---------- */
 
 .panel{
-border:1px solid var(--line);
-border-radius:10px;
-overflow:hidden;
 background:var(--surface);
-box-shadow:var(--shadow);
+border:1px solid var(--border);
+border-radius:var(--radius-lg);
+overflow:hidden;
 }
-
-
 
 .evRow{
 display:flex;
 align-items:center;
-gap:14px;
+gap:12px;
 padding:12px 16px;
-border-bottom:1px solid var(--line-soft);
-font-size:12.5px;
+border-bottom:1px solid var(--border);
 }
 
 .evRow:last-child{ border-bottom:none; }
 
-.evIcon{ width:22px; text-align:center; flex-shrink:0; }
-.evIcon.on{ color:rgb(var(--ok-rgb)); }
-.evIcon.off{ color:rgb(var(--fault-rgb)); }
+.evIcon{
+width:30px;
+height:30px;
+border-radius:8px;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-shrink:0;
+font-size:14px;
+}
+
+.evIcon.on{ background:var(--success-bg); color:var(--success); }
+.evIcon.off{ background:var(--danger-bg); color:var(--danger); }
+.evIcon.warn{ background:var(--warning-bg); color:var(--warning); }
+
 .evBody{ flex:1; min-width:0; }
-.evChan{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--text); }
-.evMsg{ color:var(--text-2); }
-.evTime{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-3); white-space:nowrap; }
+.evTitle{ font-size:13.5px; font-weight:500; }
+.evTitle .mono{ font-weight:600; }
+.evMsg{ font-size:12px; color:var(--text-2); margin-top:1px; }
+.evTime{ font-size:11px; color:var(--text-3); white-space:nowrap; font-family:'IBM Plex Mono', monospace; }
 
 /* ---------- log modal ---------- */
 
@@ -869,7 +825,7 @@ font-size:12.5px;
 display:none;
 position:fixed;
 inset:0;
-background:rgba(4,5,7,0.72);
+background:rgba(16,24,40,0.45);
 z-index:2000;
 align-items:center;
 justify-content:center;
@@ -880,79 +836,53 @@ padding:20px;
 
 .logModal{
 background:var(--surface);
-border:1px solid var(--line);
-border-radius:10px;
+border-radius:var(--radius-lg);
 width:100%;
-max-width:800px;
-max-height:80vh;
+max-width:760px;
+max-height:78vh;
 display:flex;
 flex-direction:column;
 overflow:hidden;
-box-shadow:var(--shadow);
+box-shadow:0 20px 50px rgba(16,24,40,0.25);
 }
 
 .logHeader{
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:12px 16px;
-border-bottom:1px solid var(--line);
-background:var(--surface-2);
+padding:14px 18px;
+border-bottom:1px solid var(--border);
 }
 
-.logHeader h3{ margin:0; font-size:13px; font-family:'IBM Plex Mono',monospace; font-weight:500; }
+.logHeader h3{ margin:0; font-size:14px; font-weight:600; }
+
+.logHeader button{
+padding:7px 12px;
+border-radius:var(--radius);
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text-2);
+cursor:pointer;
+font-size:12.5px;
+font-weight:500;
+}
 
 .logBody{
-padding:14px 16px;
+padding:14px 18px;
 overflow-y:auto;
-font-family:'IBM Plex Mono',monospace;
-font-size:11px;
-color:var(--text-2);
+background:#0D1117;
+font-family:'IBM Plex Mono', monospace;
+font-size:11.5px;
+color:#8FE3C0;
 white-space:pre-wrap;
 word-break:break-all;
 direction:ltr;
 text-align:left;
-background:var(--bg);
+line-height:1.6;
 }
 
-.logBody .logLine{ padding:3px 0; border-bottom:1px solid var(--line-soft); }
-.logBody .logTime{ color:rgb(var(--accent-rgb)); margin-left:8px; }
-
-/* ---------- theme menu ---------- */
-
-.themeMenu{
-position:absolute;
-top:52px;
-left:22px;
-background:var(--surface-2);
-border:1px solid var(--line);
-border-radius:9px;
-padding:6px;
-display:none;
-flex-direction:column;
-gap:2px;
-z-index:1500;
-box-shadow:var(--shadow);
-min-width:150px;
-}
-
-.themeMenu.show{ display:flex; }
-
-.themeMenu button{
-justify-content:flex-start;
-display:flex;
-align-items:center;
-gap:8px;
-background:transparent;
-border:1px solid transparent;
-color:var(--text-2);
-padding:8px 10px;
-}
-
-.themeMenu button:hover{ background:var(--surface-3); color:var(--text); }
-.themeMenu button.themeActive{ color:rgb(var(--accent-rgb)); border-color:var(--line); }
-
-.swatch{ width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+.logBody .logLine{ padding:2px 0; border-bottom:1px solid #1c2531; }
+.logBody .logTime{ color:#5B9EF2; margin-left:8px; }
 
 /* ---------- mobile ---------- */
 
@@ -964,8 +894,8 @@ left:12px;
 z-index:1100;
 width:40px;
 height:40px;
-border-radius:8px;
-border:1px solid var(--line);
+border-radius:9px;
+border:1px solid var(--border);
 background:var(--surface);
 color:var(--text);
 font-size:17px;
@@ -974,10 +904,12 @@ align-items:center;
 justify-content:center;
 }
 
-.overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; }
+.overlay{ display:none; position:fixed; inset:0; background:rgba(16,24,40,0.4); z-index:999; }
 .overlay.show{ display:block; }
 
-@media (max-width: 820px){
+@media (max-width: 860px){
+
+.app{ display:block; }
 
 .menuBtn{ display:flex; }
 
@@ -987,21 +919,20 @@ top:0;
 right:0;
 height:100%;
 height:100dvh;
-width:110px;
+width:250px;
 transform:translateX(100%);
-box-shadow:-10px 0 30px rgba(0,0,0,0.5);
+box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 }
 
 .side.open{ transform:translateX(0); }
 
-.topbar{ padding:0 14px 0 58px; }
-.topbar .titleBlock .t2{ display:none; }
-.clock{ font-size:15px; padding:5px 9px; }
-.content{ padding:16px 14px 24px 14px; }
+.topbar{ padding:0 16px 0 60px; }
 
-.statusStrip{ grid-template-columns:repeat(2,1fr); }
+.content{ padding:16px; }
 
-.themeMenu{ left:14px; top:56px; }
+.statGrid{ grid-template-columns:repeat(2,1fr); }
+
+.grid{ grid-template-columns:1fr; }
 
 }
 
@@ -1010,65 +941,51 @@ box-shadow:-10px 0 30px rgba(0,0,0,0.5);
 
 <body>
 
-<button class="menuBtn" onclick="toggleMenu()">☰</button>
+<button class="menuBtn" onclick="toggleMenu()"><i class="ti ti-menu-2"></i></button>
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
 <div class="app">
 
 <div class="side" id="sideMenu">
-<div class="brandMark">📡</div>
-<nav>
-<button class="navActive" id="navChannels" onclick="show('channels');closeMenu()">
-<span>📺</span><span class="navLbl">قنوات</span>
-</button>
-<button id="navAdd" onclick="show('add');closeMenu()">
-<span>➕</span><span class="navLbl">إضافة</span>
-</button>
-<button id="navEvents" onclick="show('events');closeMenu()">
-<span>📜</span><span class="navLbl">أحداث</span>
-</button>
-</nav>
-<div class="railFoot">
-<button class="go" onclick="startAll()" title="تشغيل الكل">
-<span>▶</span><span class="navLbl">الكل</span>
-</button>
-<button class="stopAll" onclick="stopAll()" title="إيقاف الكل">
-<span>⏹</span><span class="navLbl">إيقاف</span>
-</button>
+
+<div class="brand">
+<div class="mark"><i class="ti ti-broadcast"></i></div>
+<div class="word">لوحة القنوات<small>IPTV CONTROL</small></div>
 </div>
+
+<div class="navLabel">التنقل</div>
+
+<button class="navActive" id="navChannels" onclick="show('channels');closeMenu()"><i class="ti ti-device-tv"></i>القنوات</button>
+<button id="navAdd" onclick="show('add');closeMenu()"><i class="ti ti-plus"></i>إضافة قناة</button>
+<button id="navEvents" onclick="show('events');closeMenu()"><i class="ti ti-list-details"></i>سجل الأحداث</button>
+
+<div class="foot">
+<button class="goBtn" onclick="startAll()"><i class="ti ti-player-play"></i>تشغيل الكل</button>
+<button class="stopBtn" onclick="stopAll()"><i class="ti ti-player-stop"></i>إيقاف الكل</button>
+</div>
+
 </div>
 
 <div class="workspace">
 
 <div class="topbar">
-<div class="titleBlock">
-<span class="t1">غرفة التحكم الرئيسية</span>
-<span class="t2">IPTV MASTER CONTROL</span>
-</div>
-<div class="metaRight">
-<div class="clock mono" id="clock">--:--:--</div>
-<button class="iconBtn" id="themeBtn" onclick="toggleThemeMenu(event)" title="تغيير المظهر">🎨</button>
-<div id="connStatus" class="pill conn-bad">⏳ اتصال...</div>
-</div>
-
-<div class="themeMenu" id="themeMenu">
-<button data-t="control" onclick="setTheme('control')"><span class="swatch" style="background:#3ecf6e"></span>تحكم — Control</button>
-<button data-t="amber" onclick="setTheme('amber')"><span class="swatch" style="background:#f2a93b"></span>كهرماني — Amber</button>
-<button data-t="crimson" onclick="setTheme('crimson')"><span class="swatch" style="background:#eb4034"></span>قرمزي — Crimson</button>
-<button data-t="arctic" onclick="setTheme('arctic')"><span class="swatch" style="background:#225cc9"></span>فاتح — Arctic</button>
-</div>
+<h1>القنوات المباشرة</h1>
+<div id="connStatus" class="pill conn-bad"><i class="ti ti-loader-2"></i>اتصال...</div>
 </div>
 
 <div class="content">
 
 <section id="channels">
 
-<div id="statsBar" class="statusStrip"></div>
+<div id="statsBar" class="statGrid"></div>
 
 <div class="toolbar">
-<input id="searchBox" placeholder="🔍 بحث عن قناة..." oninput="onSearch(this.value)">
+<input id="searchBox" placeholder="بحث عن قناة..." oninput="onSearch(this.value)">
+<select id="categorySelect" onchange="onCategory(this.value)">
+<option value="">كل التصنيفات</option>
+</select>
 <select id="sortSelect" onchange="onSort(this.value)">
-<option value="status">ترتيب: الحالة (شغال أولاً)</option>
+<option value="status">ترتيب: الحالة</option>
 <option value="viewers">ترتيب: الأعلى مشاهدين</option>
 <option value="name">ترتيب: الاسم</option>
 </select>
@@ -1078,21 +995,34 @@ box-shadow:-10px 0 30px rgba(0,0,0,0.5);
 
 </section>
 
-<section id="add" hidden>
+<section id="add" style="display:none">
 
 <div class="formCard">
-<label>Channel ID</label>
-<input id="id" placeholder="ch12">
-<label>Input URL</label>
-<input id="input" placeholder="rtmp:// or http://...">
-<label>RTMP Output</label>
-<input id="output" placeholder="rtmp://...">
-<button class="submit" onclick="addChannel()">➕ إضافة القناة</button>
+
+<label>معرف القناة (Channel ID)</label>
+<input id="f_id" placeholder="ch12">
+
+<label>رابط البث (Input URL)</label>
+<input id="f_input" placeholder="rtmp:// or http://...">
+
+<label>رابط الإخراج (RTMP Output)</label>
+<input id="f_output" placeholder="rtmp://...">
+
+<label>رابط اللوجو (Logo URL)</label>
+<input id="f_logo" placeholder="https://.../logo.png">
+<div class="hint">اختياري — صورة صغيرة تظهر جنب اسم القناة</div>
+
+<label>التصنيف (Category)</label>
+<input id="f_category" placeholder="أفلام، رياضة، أطفال...">
+<div class="hint">اختياري — بيستخدم في الفلترة أعلى القائمة</div>
+
+<button class="submit" onclick="addChannel()">إضافة القناة</button>
+
 </div>
 
 </section>
 
-<section id="events" hidden>
+<section id="events" style="display:none">
 
 <div class="panel" id="eventsList"></div>
 
@@ -1109,13 +1039,13 @@ box-shadow:-10px 0 30px rgba(0,0,0,0.5);
 
 <div class="logHeader">
 <h3 id="logTitle">لوج القناة</h3>
-<button onclick="closeLogs()">✕ إغلاق</button>
+<button onclick="closeLogs()">إغلاق</button>
 </div>
 
 <div class="logBody" id="logBody"></div>
 
 <div class="logHeader">
-<button onclick="refreshLogs()">🔄 تحديث</button>
+<button onclick="refreshLogs()">تحديث</button>
 </div>
 
 </div>
@@ -1127,6 +1057,7 @@ let channelsCache = {};
 let statusCache = {};
 let eventsCache = [];
 let searchTerm = "";
+let categoryFilter = "";
 let sortMode = "status";
 
 function toggleMenu(){
@@ -1140,45 +1071,13 @@ document.getElementById("overlay").classList.remove("show");
 }
 
 function show(id){
-document.getElementById("channels").hidden = (id !== "channels");
-document.getElementById("add").hidden = (id !== "add");
-document.getElementById("events").hidden = (id !== "events");
+document.getElementById("channels").style.display = (id === "channels") ? "block" : "none";
+document.getElementById("add").style.display = (id === "add") ? "block" : "none";
+document.getElementById("events").style.display = (id === "events") ? "block" : "none";
 
 document.getElementById("navChannels").classList.toggle("navActive", id === "channels");
 document.getElementById("navAdd").classList.toggle("navActive", id === "add");
 document.getElementById("navEvents").classList.toggle("navActive", id === "events");
-}
-
-function setTheme(name){
-document.documentElement.setAttribute("data-theme", name === "control" ? "" : name);
-try{ localStorage.setItem("iptv_theme", name); }catch(e){}
-document.querySelectorAll("#themeMenu button").forEach(b => {
-b.classList.toggle("themeActive", b.dataset.t === name);
-});
-document.getElementById("themeMenu").classList.remove("show");
-}
-
-function toggleThemeMenu(e){
-e.stopPropagation();
-document.getElementById("themeMenu").classList.toggle("show");
-}
-
-document.addEventListener("click", () => {
-document.getElementById("themeMenu").classList.remove("show");
-});
-
-(function initTheme(){
-let saved = "control";
-try{ saved = localStorage.getItem("iptv_theme") || "control"; }catch(e){}
-setTheme(saved);
-})();
-
-function updateClock(){
-const el = document.getElementById("clock");
-if(!el) return;
-const now = new Date();
-const pad = n => String(n).padStart(2,"0");
-el.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
 }
 
 function renderStats(){
@@ -1186,37 +1085,55 @@ function renderStats(){
 const box = document.getElementById("statsBar");
 if(!box) return;
 
-let liveCount = 0, offCount = 0, totalViewers = 0;
+let live = 0, off = 0, totalViewers = 0;
 
 for(const id in channelsCache){
 if(statusCache[id]?.active){
-liveCount++;
+live++;
 totalViewers += statusCache[id]?.viewers || 0;
 } else {
-offCount++;
+off++;
 }
 }
 
 const restarts = eventsCache.filter(e => e.type === "restart").length;
 
 box.innerHTML = \`
-<div class="stat ok">
-<span class="num">\${liveCount}</span>
-<span class="lbl">TRANSMITTING</span>
+<div class="statCard ok">
+<div class="lbl"><i class="ti ti-broadcast"></i>شغالة</div>
+<div class="num mono">\${live}</div>
 </div>
-<div class="stat off">
-<span class="num">\${offCount}</span>
-<span class="lbl">OFFLINE</span>
+<div class="statCard off">
+<div class="lbl"><i class="ti ti-player-stop"></i>متوقفة</div>
+<div class="num mono">\${off}</div>
 </div>
-<div class="stat accent">
-<span class="num">\${totalViewers}</span>
-<span class="lbl">LIVE VIEWERS</span>
+<div class="statCard accent">
+<div class="lbl"><i class="ti ti-eye"></i>مشاهدين الآن</div>
+<div class="num mono">\${totalViewers}</div>
 </div>
-<div class="stat warn">
-<span class="num">\${restarts}</span>
-<span class="lbl">AUTO-RESTARTS</span>
+<div class="statCard warn">
+<div class="lbl"><i class="ti ti-refresh"></i>إعادة تشغيل</div>
+<div class="num mono">\${restarts}</div>
 </div>
 \`;
+
+}
+
+function refreshCategoryOptions(){
+
+const sel = document.getElementById("categorySelect");
+const current = sel.value;
+
+const cats = new Set();
+for(const id in channelsCache){
+const c = channelsCache[id].category;
+if(c) cats.add(c);
+}
+
+sel.innerHTML = '<option value="">كل التصنيفات</option>' +
+Array.from(cats).map(c => '<option value="' + c + '">' + c + '</option>').join("");
+
+sel.value = current;
 
 }
 
@@ -1229,11 +1146,15 @@ if(term){
 ids = ids.filter(id => id.toLowerCase().includes(term));
 }
 
+if(categoryFilter){
+ids = ids.filter(id => channelsCache[id].category === categoryFilter);
+}
+
 if(sortMode === "status"){
 ids.sort((a,b) => {
-const aActive = statusCache[a]?.active ? 1 : 0;
-const bActive = statusCache[b]?.active ? 1 : 0;
-return bActive - aActive;
+const aA = statusCache[a]?.active ? 1 : 0;
+const bA = statusCache[b]?.active ? 1 : 0;
+return bA - aA;
 });
 } else if(sortMode === "viewers"){
 ids.sort((a,b) => (statusCache[b]?.viewers||0) - (statusCache[a]?.viewers||0));
@@ -1245,14 +1166,14 @@ return ids;
 
 }
 
-function onSort(val){
-sortMode = val;
-render();
-}
+function onSearch(val){ searchTerm = val; render(); }
+function onCategory(val){ categoryFilter = val; render(); }
+function onSort(val){ sortMode = val; render(); }
 
 function render(){
 
 renderStats();
+refreshCategoryOptions();
 
 const box = document.getElementById("list");
 box.innerHTML = "";
@@ -1264,48 +1185,49 @@ for(const id of ids){
 const isOn = !!statusCache[id]?.active;
 const current = statusCache[id]?.viewers || 0;
 const total = statusCache[id]?.total || 0;
+const ch = channelsCache[id];
+const logoUrl = ch.logo || "";
+const category = ch.category || "";
 
 box.innerHTML += \`
-<div class="card \${isOn ? 'isLive' : ''}">
+<div class="card">
 
-<div class="screen">
-<span class="dot \${isOn ? 'on' : ''}"></span>
-<div>
-<span class="chName">\${id}</span>
-<span class="statusTxt \${isOn ? 'on' : 'off'}">\${isOn ? '● يبث الآن' : '○ متوقف'}</span>
+<div class="cardHead">
+<div class="logoBox">\${logoUrl ? '<img src="'+logoUrl+'" onerror="this.parentElement.innerHTML=\\'<i class=\\\\\\'ti ti-device-tv\\\\\\'></i>\\'">' : '<i class="ti ti-device-tv"></i>'}</div>
+<div class="titleWrap">
+<h3>\${id}</h3>
+\${category ? '<span class="catTag">'+category+'</span>' : ''}
 </div>
-<div class="readout">
-<div>
-<span class="rNum">\${current}</span>
-<span class="rLbl">مشاهد الآن</span>
-</div>
-<div>
-<span class="rNum dim">\${total}</span>
-<span class="rLbl">إجمالي</span>
-</div>
-</div>
+<div class="statusPill \${isOn ? 'on' : 'off'}"><i class="ti ti-point-filled"></i>\${isOn ? 'شغالة' : 'متوقفة'}</div>
 </div>
 
-<div class="cardBody">
-
-<div class="info">
-<b>INPUT</b>
-<span title="\${channelsCache[id].input || ''}">\${channelsCache[id].input || '—'}</span>
+<div class="readoutRow">
+<div class="readoutBox">
+<div class="rLbl">الحالي</div>
+<div class="rVal">\${current}</div>
+</div>
+<div class="readoutBox">
+<div class="rLbl">الإجمالي</div>
+<div class="rVal">\${total}</div>
+</div>
 </div>
 
-<div class="info">
-<b>OUTPUT</b>
-<span title="\${channelsCache[id].output || ''}">\${channelsCache[id].output || '—'}</span>
+<div class="techLine">
+<div class="tLbl">INPUT</div>
+<span class="tVal" title="\${ch.input || ''}">\${ch.input || '—'}</span>
 </div>
 
-<div class="btns">
-<button class="start" onclick="start('\${id}')">▶ تشغيل</button>
-<button class="stop" onclick="stop('\${id}')">⏹ إيقاف</button>
-<button onclick="editChannel('\${id}')">✏</button>
-<button onclick="showLogs('\${id}')">📄</button>
-<button class="del" onclick="del('\${id}')">🗑</button>
+<div class="techLine">
+<div class="tLbl">OUTPUT</div>
+<span class="tVal" title="\${ch.output || ''}">\${ch.output || '—'}</span>
 </div>
 
+<div class="btnRow">
+<button class="iBtn go" onclick="start('\${id}')" title="تشغيل"><i class="ti ti-player-play"></i></button>
+<button class="iBtn stop" onclick="stop('\${id}')" title="إيقاف"><i class="ti ti-player-stop"></i></button>
+<button class="iBtn" onclick="editChannel('\${id}')" title="تعديل"><i class="ti ti-edit"></i></button>
+<button class="iBtn" onclick="showLogs('\${id}')" title="اللوج"><i class="ti ti-file-text"></i></button>
+<button class="iBtn" onclick="del('\${id}')" title="حذف"><i class="ti ti-trash"></i></button>
 </div>
 
 </div>
@@ -1336,12 +1258,12 @@ renderEvents();
 renderStats();
 }
 
-function eventLabel(type){
-if(type === "start") return { icon:"▶", cls:"on", text:"تشغيل" };
-if(type === "stop") return { icon:"⏹", cls:"off", text:"إيقاف" };
-if(type === "exit") return { icon:"❌", cls:"off", text:"خروج غير متوقع" };
-if(type === "restart") return { icon:"🔄", cls:"on", text:"إعادة تشغيل" };
-return { icon:"•", cls:"", text:type };
+function eventMeta(type){
+if(type === "start") return { icon:"ti-player-play", cls:"on", text:"تشغيل" };
+if(type === "stop") return { icon:"ti-player-stop", cls:"off", text:"إيقاف" };
+if(type === "exit") return { icon:"ti-alert-triangle", cls:"off", text:"خروج غير متوقع" };
+if(type === "restart") return { icon:"ti-refresh", cls:"warn", text:"إعادة تشغيل" };
+return { icon:"ti-point", cls:"", text:type };
 }
 
 function renderEvents(){
@@ -1358,28 +1280,23 @@ box.innerHTML = "";
 
 for(const ev of eventsCache){
 
-const lbl = eventLabel(ev.type);
+const m = eventMeta(ev.type);
 const t = new Date(ev.time);
 const timeStr = t.toLocaleString("ar-EG");
 
 box.innerHTML += \`
 <div class="evRow">
-<span class="evIcon \${lbl.cls}">\${lbl.icon}</span>
+<div class="evIcon \${m.cls}"><i class="ti \${m.icon}"></i></div>
 <div class="evBody">
-<span class="evChan">\${ev.id}</span> — \${lbl.text}
+<div class="evTitle"><span class="mono">\${ev.id}</span> — \${m.text}</div>
 <div class="evMsg">\${ev.message}</div>
 </div>
-<span class="evTime">\${timeStr}</span>
+<div class="evTime">\${timeStr}</div>
 </div>
 \`;
 
 }
 
-}
-
-function onSearch(val){
-searchTerm = val;
-render();
 }
 
 let currentLogChannel = null;
@@ -1439,12 +1356,12 @@ ws = new WebSocket(proto + "//" + location.host);
 
 ws.onopen = () => {
 document.getElementById("connStatus").className = "pill conn-ok";
-document.getElementById("connStatus").innerText = "🟢 متصل مباشر";
+document.getElementById("connStatus").innerHTML = '<i class="ti ti-plug-connected"></i>متصل مباشر';
 };
 
 ws.onclose = () => {
 document.getElementById("connStatus").className = "pill conn-bad";
-document.getElementById("connStatus").innerText = "🔴 منقطع - إعادة محاولة...";
+document.getElementById("connStatus").innerHTML = '<i class="ti ti-plug-connected-x"></i>منقطع - إعادة محاولة...';
 clearTimeout(wsReconnectTimer);
 wsReconnectTimer = setTimeout(connectWS, 3000);
 };
@@ -1480,21 +1397,36 @@ load();
 }
 
 async function addChannel(){
+
+const id = document.getElementById("f_id").value.trim();
+const input = document.getElementById("f_input").value.trim();
+const output = document.getElementById("f_output").value.trim();
+const logo = document.getElementById("f_logo").value.trim();
+const category = document.getElementById("f_category").value.trim();
+
+if(!id || !input || !output){
+alert("من فضلك املأ معرف القناة، رابط البث، ورابط الإخراج على الأقل");
+return;
+}
+
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({
-id:id.value,
-input:input.value,
-output:output.value
-})
+body:JSON.stringify({ id, input, output, logo, category })
 });
+
+document.getElementById("f_id").value = "";
+document.getElementById("f_input").value = "";
+document.getElementById("f_output").value = "";
+document.getElementById("f_logo").value = "";
+document.getElementById("f_category").value = "";
 
 load();
 show("channels");
 }
 
 async function del(id){
+if(!confirm("حذف القناة " + id + "؟")) return;
 await fetch("/channel/"+id,{ method:"DELETE" });
 load();
 }
@@ -1502,27 +1434,33 @@ load();
 async function editChannel(id){
 const r = await fetch("/channels");
 const data = await r.json();
+const ch = data[id];
 
-const inputVal = prompt("Input", data[id].input);
-if(!inputVal) return;
+const inputVal = prompt("Input URL", ch.input);
+if(inputVal === null) return;
 
-const outputVal = prompt("Output", data[id].output);
-if(!outputVal) return;
+const outputVal = prompt("RTMP Output", ch.output);
+if(outputVal === null) return;
+
+const logoVal = prompt("Logo URL (اتركه فاضي لو مفيش)", ch.logo || "");
+if(logoVal === null) return;
+
+const categoryVal = prompt("Category (اتركه فاضي لو مفيش)", ch.category || "");
+if(categoryVal === null) return;
 
 await fetch("/channel/"+id,{
 method:"PUT",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
-input:inputVal,
-output:outputVal
+input: inputVal,
+output: outputVal,
+logo: logoVal,
+category: categoryVal
 })
 });
 
 load();
 }
-
-updateClock();
-setInterval(updateClock, 1000);
 
 load();
 loadEvents();
