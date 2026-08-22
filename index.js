@@ -686,7 +686,20 @@ background:var(--surface);
 border:1px solid var(--border);
 border-radius:var(--radius-lg);
 padding:16px;
+padding-top:19px;
 transition:0.15s;
+position:relative;
+overflow:hidden;
+}
+
+.card::before{
+content:"";
+position:absolute;
+top:0;
+left:0;
+right:0;
+height:3px;
+background:var(--accent);
 }
 
 .card:hover{ border-color:var(--border-strong); box-shadow:0 1px 3px rgba(16,24,40,0.06); }
@@ -757,6 +770,7 @@ padding:8px 10px;
 
 .readoutBox .rLbl{ font-size:10px; color:var(--text-3); margin-bottom:2px; }
 .readoutBox .rVal{ font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; }
+.readoutBox:first-child .rVal{ color:var(--accent); }
 
 .techLine{ margin-bottom:7px; }
 .techLine .tLbl{ font-size:10px; color:var(--text-3); margin-bottom:2px; }
