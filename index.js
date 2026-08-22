@@ -12,6 +12,9 @@ let ffmpegProcesses = {};
 let viewerIntervals = {};
 let viewers = {};
 
+// تتبع هل القناة اتوقفت يدويًا (لمنع إعادة التشغيل التلقائي في الحالة دي)
+let manuallyStopped = {};
+
 // آخر سطور ffmpeg لكل قناة (لعرضها في اللوحة)
 let ffmpegLogs = {};
 const MAX_LOG_LINES = 300;
@@ -178,6 +181,9 @@ function spawnStream(id) {
   console.log("▶ START:", id);
   logEvent(id, "start", "تم تشغيل القناة");
 
+  // أي تشغيل (يدوي أو تلقائي) يلغي حالة "متوقفة يدويًا"
+  manuallyStopped[id] = false;
+
   const ffmpeg = spawn("ffmpeg", [
     "-re",
 
@@ -242,9 +248,6 @@ function spawnStream(id) {
   });
 
   ffmpeg.on("exit", () => {
-    console.log("❌ EXIT:", id);
-    logEvent(id, "exit", "توقفت القناة (خروج غير متوقع)");
-
     delete ffmpegProcesses[id];
     viewers[id] = 0;
 
@@ -253,8 +256,17 @@ function spawnStream(id) {
       delete viewerIntervals[id];
     }
 
+    // لو اتوقفت يدويًا، منعملش إعادة تشغيل تلقائي
+    if (manuallyStopped[id]) {
+      console.log("⏹ EXIT (manual stop):", id);
+      return;
+    }
+
+    console.log("❌ EXIT (unexpected):", id);
+    logEvent(id, "exit", "توقفت القناة (خروج غير متوقع)");
+
     setTimeout(() => {
-      if (!ffmpegProcesses[id]) {
+      if (!ffmpegProcesses[id] && !manuallyStopped[id]) {
         logEvent(id, "restart", "إعادة تشغيل تلقائية بعد التوقف");
         spawnStream(id);
       }
@@ -279,6 +291,8 @@ app.get("/start", (req, res) => {
 
 app.get("/stop", (req, res) => {
   const id = req.query.id;
+
+  manuallyStopped[id] = true;
 
   if (ffmpegProcesses[id]) {
     ffmpegProcesses[id].kill("SIGKILL");
@@ -305,6 +319,8 @@ app.get("/start-all", (req, res) => {
 
 app.get("/stop-all", (req, res) => {
   for (const id in channels) {
+    manuallyStopped[id] = true;
+
     if (ffmpegProcesses[id]) {
       ffmpegProcesses[id].kill("SIGKILL");
       delete ffmpegProcesses[id];
@@ -435,6 +451,11 @@ app.get("/dashboard", (req, res) => {
 }
 
 html[data-accent="teal"]{
+--page:#F1F8F5;
+--surface:#FFFFFF;
+--surface-2:#EFFAF5;
+--border:#D7EDE3;
+--border-strong:#B9DDD0;
 --accent:#0F6E56;
 --accent-bg:#E1F5EE;
 --success:#0F6E56;
@@ -442,6 +463,11 @@ html[data-accent="teal"]{
 }
 
 html[data-accent="amber"]{
+--page:#FBF6ED;
+--surface:#FFFFFF;
+--surface-2:#FDF6E9;
+--border:#F0DFB8;
+--border-strong:#E3C98C;
 --accent:#854F0B;
 --accent-bg:#FAEEDA;
 --success:#854F0B;
