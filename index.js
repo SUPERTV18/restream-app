@@ -437,11 +437,15 @@ app.get("/dashboard", (req, res) => {
 html[data-accent="teal"]{
 --accent:#0F6E56;
 --accent-bg:#E1F5EE;
+--success:#0F6E56;
+--success-bg:#E1F5EE;
 }
 
 html[data-accent="amber"]{
 --accent:#854F0B;
 --accent-bg:#FAEEDA;
+--success:#854F0B;
+--success-bg:#FAEEDA;
 }
 
 *{ box-sizing:border-box; }
@@ -1051,6 +1055,7 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <div class="topbar">
 <h1>القنوات المباشرة</h1>
 <div style="display:flex;align-items:center;gap:10px;position:relative">
+<div id="clock" class="pill mono" style="background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)">--:--:--</div>
 <button class="iconBtn" onclick="toggleThemeMenu(event)" title="تغيير اللون"><i class="ti ti-palette"></i></button>
 <div id="connStatus" class="pill conn-bad"><i class="ti ti-loader-2"></i>اتصال...</div>
 
@@ -1153,6 +1158,16 @@ let sortMode = "status";
 function imgFallback(el){
 el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
 }
+
+function updateClock(){
+const el = document.getElementById("clock");
+if(!el) return;
+const now = new Date();
+const pad = n => String(n).padStart(2,"0");
+el.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
+}
+updateClock();
+setInterval(updateClock, 1000);
 
 function setAccent(name){
 document.documentElement.setAttribute("data-accent", name === "blue" ? "" : name);
