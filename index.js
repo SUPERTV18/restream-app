@@ -678,92 +678,110 @@ font-size:13px;
 .toolbar select{ flex:0 1 220px; cursor:pointer; }
 .toolbar input:focus, .toolbar select:focus{ border-color:rgb(var(--accent-rgb)); }
 
-/* ---------- channel table ---------- */
+/* ---------- channel cards (multiviewer wall) ---------- */
 
-.tableWrap{
-border:1px solid var(--line);
-border-radius:10px;
-overflow:auto;
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(272px,1fr));
+gap:16px;
+}
+
+.card{
 background:var(--surface);
+border:1px solid var(--line);
+border-radius:12px;
+overflow:hidden;
+transition:0.2s;
 box-shadow:var(--shadow);
+position:relative;
 }
 
-table.chTable{ width:100%; border-collapse:collapse; min-width:760px; }
+.card:hover{ transform:translateY(-3px); border-color:rgba(var(--accent-rgb),0.4); }
+.card.isLive{ border-color:rgba(var(--ok-rgb),0.35); }
 
-.chTable thead th{
-text-align:right;
-font-family:'IBM Plex Mono',monospace;
-font-size:10px;
-letter-spacing:0.8px;
-color:var(--text-3);
-font-weight:500;
-padding:11px 16px;
+.screen{
+position:relative;
+aspect-ratio:16/9;
+padding:13px 15px;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+background:
+  repeating-linear-gradient(180deg, rgba(255,255,255,0.014) 0px, rgba(255,255,255,0.014) 1px, transparent 1px, transparent 3px),
+  var(--bg);
 border-bottom:1px solid var(--line);
-background:var(--surface-2);
-white-space:nowrap;
-position:sticky;
-top:0;
-z-index:1;
 }
 
-.chTable tbody tr{ border-bottom:1px solid var(--line-soft); transition:background 0.12s; border-right:3px solid transparent; }
-.chTable tbody tr:last-child{ border-bottom:none; }
-.chTable tbody tr:nth-child(even){ background:rgba(255,255,255,0.012); }
-.chTable tbody tr:hover{ background:var(--surface-2); }
-.chTable tbody tr.rowOn{ border-right-color:rgba(var(--ok-rgb),0.55); }
-
-.chTable td{ padding:12px 16px; vertical-align:middle; font-size:12.5px; }
-
-.statusCell{ display:flex; align-items:center; gap:8px; white-space:nowrap; }
-
-.dot{ width:8px; height:8px; border-radius:50%; background:var(--off); flex-shrink:0; }
-.dot.on{ background:rgb(var(--ok-rgb)); box-shadow:0 0 8px 1px rgba(var(--ok-rgb),0.5); animation:dotPulse 2.2s ease-in-out infinite; }
+.dot{ position:absolute; top:12px; left:13px; width:9px; height:9px; border-radius:50%; background:var(--off); }
+.dot.on{ background:rgb(var(--ok-rgb)); box-shadow:0 0 9px 2px rgba(var(--ok-rgb),0.5); animation:dotPulse 2.2s ease-in-out infinite; }
 
 @keyframes dotPulse{ 0%,100%{opacity:1;} 50%{opacity:0.5;} }
 
-.statusTxt{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.4px; }
+.chName{
+font-family:'IBM Plex Mono',monospace;
+font-weight:600;
+font-size:20px;
+color:var(--text);
+padding-right:16px;
+letter-spacing:0.3px;
+}
+
+.statusTxt{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1px; margin-top:2px; display:block; }
 .statusTxt.on{ color:rgb(var(--ok-rgb)); }
 .statusTxt.off{ color:var(--text-3); }
 
-.chName{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px; color:var(--text); }
+.readout{ display:flex; gap:20px; }
+.readout .rNum{ font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:rgb(var(--accent-rgb)); display:block; line-height:1; }
+.readout .rNum.dim{ color:var(--text-3); }
+.readout .rLbl{ font-size:9.5px; color:var(--text-3); letter-spacing:0.4px; }
 
-.urlCell{
+.cardBody{ padding:13px 15px 15px 15px; }
+
+.info{ margin-bottom:9px; font-size:11.5px; }
+.info b{
+display:block;
+font-family:'IBM Plex Mono',monospace;
+font-size:9px;
+letter-spacing:1.2px;
+color:var(--text-3);
+margin-bottom:2px;
+font-weight:500;
+}
+.info span{
 font-family:'IBM Plex Mono',monospace;
 font-size:11px;
 color:var(--text-2);
 direction:ltr;
+display:block;
 text-align:left;
-max-width:220px;
 overflow:hidden;
 text-overflow:ellipsis;
 white-space:nowrap;
 }
 
-.numCell{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text); text-align:center; }
-.numCell.dim{ color:var(--text-3); }
-
-.rowBtns{ display:flex; gap:5px; flex-wrap:nowrap; justify-content:flex-end; }
+.btns{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 
 button{
 font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
-padding:7px 11px;
+padding:8px 10px;
 border:1px solid var(--line);
 border-radius:6px;
 cursor:pointer;
 font-weight:600;
-font-size:11.5px;
+font-size:12px;
 background:var(--surface-2);
 color:var(--text-2);
 transition:0.15s;
 white-space:nowrap;
+flex:1 1 auto;
 }
 
 button:hover{ filter:brightness(1.2); }
 button:active{ transform:translateY(1px); }
 
-.rowBtns .start{ color:rgb(var(--ok-rgb)); border-color:rgba(var(--ok-rgb),0.35); }
-.rowBtns .stop{ color:rgb(var(--fault-rgb)); border-color:rgba(var(--fault-rgb),0.35); }
-.rowBtns .del{ color:var(--text-3); }
+.btns .start{ color:rgb(var(--ok-rgb)); border-color:rgba(var(--ok-rgb),0.35); }
+.btns .stop{ color:rgb(var(--fault-rgb)); border-color:rgba(var(--fault-rgb),0.35); }
+.btns .del{ color:var(--text-3); flex:0 0 auto; }
 
 /* ---------- add channel form ---------- */
 
@@ -814,7 +832,17 @@ padding:12px;
 font-size:13px;
 }
 
-/* ---------- events ---------- */
+/* ---------- panel (events list) ---------- */
+
+.panel{
+border:1px solid var(--line);
+border-radius:10px;
+overflow:hidden;
+background:var(--surface);
+box-shadow:var(--shadow);
+}
+
+
 
 .evRow{
 display:flex;
@@ -1046,22 +1074,7 @@ box-shadow:-10px 0 30px rgba(0,0,0,0.5);
 </select>
 </div>
 
-<div class="tableWrap">
-<table class="chTable">
-<thead>
-<tr>
-<th>الحالة</th>
-<th>القناة</th>
-<th>المصدر (Input)</th>
-<th>الخرج (Output)</th>
-<th>المشاهدون</th>
-<th>الإجمالي</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="list"></tbody>
-</table>
-</div>
+<div id="list" class="grid"></div>
 
 </section>
 
@@ -1081,7 +1094,7 @@ box-shadow:-10px 0 30px rgba(0,0,0,0.5);
 
 <section id="events" hidden>
 
-<div class="tableWrap" id="eventsList"></div>
+<div class="panel" id="eventsList"></div>
 
 </section>
 
@@ -1253,34 +1266,55 @@ const current = statusCache[id]?.viewers || 0;
 const total = statusCache[id]?.total || 0;
 
 box.innerHTML += \`
-<tr class="\${isOn ? 'rowOn' : ''}">
-<td>
-<div class="statusCell">
+<div class="card \${isOn ? 'isLive' : ''}">
+
+<div class="screen">
 <span class="dot \${isOn ? 'on' : ''}"></span>
-<span class="statusTxt \${isOn ? 'on' : 'off'}">\${isOn ? 'يبث' : 'متوقف'}</span>
+<div>
+<span class="chName">\${id}</span>
+<span class="statusTxt \${isOn ? 'on' : 'off'}">\${isOn ? '● يبث الآن' : '○ متوقف'}</span>
 </div>
-</td>
-<td class="chName">\${id}</td>
-<td class="urlCell" title="\${channelsCache[id].input || ''}">\${channelsCache[id].input || '—'}</td>
-<td class="urlCell" title="\${channelsCache[id].output || ''}">\${channelsCache[id].output || '—'}</td>
-<td class="numCell">\${current}</td>
-<td class="numCell dim">\${total}</td>
-<td>
-<div class="rowBtns">
-<button class="start" onclick="start('\${id}')">▶</button>
-<button class="stop" onclick="stop('\${id}')">⏹</button>
+<div class="readout">
+<div>
+<span class="rNum">\${current}</span>
+<span class="rLbl">مشاهد الآن</span>
+</div>
+<div>
+<span class="rNum dim">\${total}</span>
+<span class="rLbl">إجمالي</span>
+</div>
+</div>
+</div>
+
+<div class="cardBody">
+
+<div class="info">
+<b>INPUT</b>
+<span title="\${channelsCache[id].input || ''}">\${channelsCache[id].input || '—'}</span>
+</div>
+
+<div class="info">
+<b>OUTPUT</b>
+<span title="\${channelsCache[id].output || ''}">\${channelsCache[id].output || '—'}</span>
+</div>
+
+<div class="btns">
+<button class="start" onclick="start('\${id}')">▶ تشغيل</button>
+<button class="stop" onclick="stop('\${id}')">⏹ إيقاف</button>
 <button onclick="editChannel('\${id}')">✏</button>
 <button onclick="showLogs('\${id}')">📄</button>
 <button class="del" onclick="del('\${id}')">🗑</button>
 </div>
-</td>
-</tr>
+
+</div>
+
+</div>
 \`;
 
 }
 
 if(ids.length === 0){
-box.innerHTML = '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text-3)">لا يوجد قنوات مطابقة</td></tr>';
+box.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-3)">لا يوجد قنوات مطابقة</div>';
 }
 
 }
