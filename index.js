@@ -1136,6 +1136,10 @@ let searchTerm = "";
 let categoryFilter = "";
 let sortMode = "status";
 
+function imgFallback(el){
+el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
+}
+
 function setAccent(name){
 document.documentElement.setAttribute("data-accent", name === "blue" ? "" : name);
 try{ localStorage.setItem("iptv_accent", name); }catch(e){}
@@ -1293,7 +1297,7 @@ box.innerHTML += \`
 <div class="card">
 
 <div class="cardHead">
-<div class="logoBox">\${logoUrl ? '<img src="'+logoUrl+'" onerror="this.parentElement.innerHTML=\\'<i class=\\\\\\'ti ti-device-tv\\\\\\'></i>\\'">' : '<i class="ti ti-device-tv"></i>'}</div>
+<div class="logoBox">\${logoUrl ? '<img src="'+logoUrl+'" onerror="imgFallback(this)">' : '<i class="ti ti-device-tv"></i>'}</div>
 <div class="titleWrap">
 <h3>\${id}</h3>
 \${category ? '<span class="catTag">'+category+'</span>' : ''}
