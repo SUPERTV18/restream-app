@@ -381,403 +381,584 @@ app.get("/dashboard", (req, res) => {
 
   const html = `
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html dir="rtl">
 
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>لوحة التحكم الرئيسية · Master Control</title>
+<title>IPTV PRO PANEL</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-
 :root{
---bg:#0b0d10;
---surface:#12151a;
---surface-2:#181c22;
---surface-3:#1e232a;
---line:#242931;
---line-soft:#1a1e24;
---text:#d7dce1;
---text-2:#8b929b;
---text-3:#565c65;
---ok:#3ecf6e;
---ok-dim:#12261b;
---fault:#e5484d;
---fault-dim:#2b1416;
---warn:#f2a93b;
---accent:#5b8dee;
---off:#4a505a;
+--bg:#0A0D12;
+--panel:#12161E;
+--panel-2:#161B24;
+--line:#232A36;
+--text:#E7ECF3;
+--text-dim:#7C879B;
+--live:#00D18F;
+--live-glow:rgba(0,209,143,.55);
+--off:#FF4B5C;
+--amber:#FFB020;
+--signal:#3FA9F5;
+--radius:10px;
 }
 
-*{ box-sizing:border-box; }
+*{
+box-sizing:border-box;
+}
 
-html, body{ margin:0; padding:0; overflow-x:hidden; }
-
-@media (prefers-reduced-motion: reduce){
-*{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+html, body{
+margin:0;
+padding:0;
+overflow-x:hidden;
 }
 
 body{
-font-family:'IBM Plex Sans Arabic','IBM Plex Mono',Arial,sans-serif;
-background:var(--bg);
+font-family:'IBM Plex Sans Arabic', sans-serif;
+background:
+radial-gradient(1200px 600px at 100% -10%, rgba(63,169,245,0.06), transparent 60%),
+radial-gradient(1000px 500px at -10% 110%, rgba(0,209,143,0.05), transparent 60%),
+var(--bg);
 color:var(--text);
+display:flex;
 min-height:100vh;
 min-height:100dvh;
 }
 
-::selection{ background:var(--accent); color:#0b0d10; }
+.mono{
+font-family:'JetBrains Mono', monospace;
+}
 
-.mono{ font-family:'IBM Plex Mono',monospace; }
-
-.app{ display:flex; min-height:100vh; min-height:100dvh; }
-
-/* ---------- icon rail ---------- */
+/* ======================
+   🎛️ SIDE RACK (nav)
+   ====================== */
 
 .side{
-width:74px;
+width:264px;
 flex-shrink:0;
-background:var(--surface);
-border-left:1px solid var(--line);
+background:var(--panel);
+border-right:1px solid var(--line);
+padding:0;
 display:flex;
 flex-direction:column;
-align-items:center;
-padding:18px 0;
-transition:transform 0.25s;
+transition:transform 0.3s;
 z-index:1000;
 }
 
-.side .brandMark{
-width:34px;
-height:34px;
-border-radius:8px;
-background:var(--surface-3);
-border:1px solid var(--line);
+.brand{
 display:flex;
 align-items:center;
-justify-content:center;
-font-size:15px;
-margin-bottom:22px;
-color:var(--accent);
+gap:10px;
+padding:22px 20px;
+border-bottom:1px solid var(--line);
 }
 
-.side nav{
-display:flex;
-flex-direction:column;
-gap:6px;
-width:100%;
-align-items:center;
+.brand .tally{
+width:11px;
+height:11px;
+border-radius:50%;
+background:var(--live);
+box-shadow:0 0 10px var(--live-glow);
+animation:tallyPulse 2.2s ease-in-out infinite;
+flex-shrink:0;
+}
+
+.brand .word{
+font-family:'Oswald', sans-serif;
+font-weight:600;
+letter-spacing:1.5px;
+font-size:17px;
+line-height:1.1;
+}
+
+.brand .word small{
+display:block;
+font-family:'JetBrains Mono', monospace;
+font-weight:400;
+letter-spacing:2px;
+font-size:10px;
+color:var(--text-dim);
+margin-top:2px;
+}
+
+.navGroup{
+padding:16px 14px;
+}
+
+.navLabel{
+font-family:'JetBrains Mono', monospace;
+font-size:10px;
+letter-spacing:1.5px;
+color:var(--text-dim);
+padding:0 8px 8px 8px;
+text-transform:uppercase;
 }
 
 .side button{
-width:52px;
-height:52px;
-border:1px solid transparent;
-border-radius:9px;
-background:transparent;
-color:var(--text-3);
-cursor:pointer;
-font-size:18px;
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-gap:3px;
-transition:0.15s;
-}
-
-.side button .navLbl{
-font-size:9px;
-font-family:'IBM Plex Mono',monospace;
-letter-spacing:0.3px;
-}
-
-.side button:hover{ background:var(--surface-2); color:var(--text); }
-.side button.navActive{ background:var(--surface-3); color:var(--accent); border-color:var(--line); }
-
-.side .railFoot{
-margin-top:auto;
-display:flex;
-flex-direction:column;
-gap:8px;
 width:100%;
-align-items:center;
+padding:12px 14px;
+margin-bottom:6px;
+border:none;
+border-right:2px solid transparent;
+border-radius:6px;
+cursor:pointer;
+background:transparent;
+color:var(--text);
+font-family:'IBM Plex Sans Arabic', sans-serif;
+font-weight:500;
+font-size:14px;
+transition:0.15s;
+text-align:right;
 }
 
-.side .railFoot button.go{ color:var(--ok); }
-.side .railFoot button.stopAll{ color:var(--fault); }
+.side button:hover{
+background:var(--panel-2);
+border-right-color:var(--signal);
+}
 
-/* ---------- workspace ---------- */
+.rackDivider{
+border:0;
+height:1px;
+background:var(--line);
+margin:10px 14px;
+}
 
-.workspace{ flex:1; display:flex; flex-direction:column; min-width:0; }
+.side .bulkBtn{
+font-family:'Oswald', sans-serif;
+letter-spacing:0.5px;
+font-weight:600;
+text-align:center;
+border-radius:6px;
+}
 
-.topbar{
-height:58px;
-flex-shrink:0;
+.side .bulkOn{
+background:rgba(0,209,143,0.12);
+color:var(--live);
+border:1px solid rgba(0,209,143,0.35);
+}
+
+.side .bulkOn:hover{
+background:rgba(0,209,143,0.2);
+}
+
+.side .bulkOff{
+background:rgba(255,75,92,0.12);
+color:var(--off);
+border:1px solid rgba(255,75,92,0.35);
+}
+
+.side .bulkOff:hover{
+background:rgba(255,75,92,0.2);
+}
+
+/* ======================
+   🖥️ MAIN
+   ====================== */
+
+.main{
+flex:1;
+padding:24px 28px;
+overflow:auto;
+width:100%;
+min-width:0;
+}
+
+.pageTitle{
+font-family:'Oswald', sans-serif;
+font-size:13px;
+letter-spacing:2px;
+color:var(--text-dim);
+text-transform:uppercase;
+margin:0 0 16px 0;
+padding-bottom:12px;
 border-bottom:1px solid var(--line);
-background:var(--surface);
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding:0 22px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
 gap:16px;
 }
 
-.topbar .titleBlock{ display:flex; flex-direction:column; line-height:1.25; }
-.topbar .titleBlock .t1{ font-size:14px; font-weight:700; color:var(--text); }
-.topbar .titleBlock .t2{ font-size:10px; color:var(--text-3); font-family:'IBM Plex Mono',monospace; letter-spacing:1px; }
+/* ======================
+   📺 MONITOR TILE (channel card)
+   ====================== */
 
-.topbar .metaRight{ display:flex; align-items:center; gap:16px; }
-
-.clock{
-font-family:'IBM Plex Mono',monospace;
-font-size:19px;
-font-weight:500;
-color:var(--text);
-letter-spacing:1px;
-padding:6px 12px;
-background:var(--surface-2);
+.card{
+background:var(--panel);
+padding:0;
+border-radius:var(--radius);
 border:1px solid var(--line);
-border-radius:7px;
-}
-
-.pill{
-padding:6px 12px;
-border-radius:20px;
-font-size:11px;
-font-family:'IBM Plex Mono',monospace;
-letter-spacing:0.3px;
-border:1px solid;
-}
-
-.conn-ok{ background:var(--ok-dim); color:var(--ok); border-color:#1f4a30; }
-.conn-bad{ background:var(--fault-dim); color:var(--fault); border-color:#4a2124; }
-
-.content{ flex:1; padding:22px 26px 30px 26px; overflow:auto; }
-
-/* ---------- status strip ---------- */
-
-.statusStrip{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:1px;
-background:var(--line);
-border:1px solid var(--line);
-border-radius:10px;
+transition:0.15s;
+position:relative;
 overflow:hidden;
-margin-bottom:18px;
 }
 
-.stat{
-background:var(--surface);
-padding:14px 18px;
+.card:hover{
+border-color:#2E3746;
+transform:translateY(-2px);
 }
 
-.stat .num{ font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; line-height:1; display:block; margin-bottom:4px; }
-.stat .lbl{ font-size:10.5px; color:var(--text-3); letter-spacing:0.4px; font-family:'IBM Plex Mono',monospace; }
-
-.stat.ok .num{ color:var(--ok); }
-.stat.off .num{ color:var(--text-2); }
-.stat.accent .num{ color:var(--accent); }
-.stat.warn .num{ color:var(--warn); }
-
-/* ---------- toolbar ---------- */
-
-.toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-
-.toolbar input, .toolbar select{
-font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
-padding:10px 14px;
-border-radius:7px;
-border:1px solid var(--line);
-background:var(--surface-2);
-color:var(--text);
-outline:none;
-font-size:13px;
-}
-
-.toolbar input{ flex:1 1 260px; }
-.toolbar select{ flex:0 1 220px; cursor:pointer; }
-.toolbar input:focus, .toolbar select:focus{ border-color:var(--accent); }
-
-/* ---------- channel table ---------- */
-
-.tableWrap{
-border:1px solid var(--line);
-border-radius:10px;
-overflow:auto;
-background:var(--surface);
-}
-
-table.chTable{ width:100%; border-collapse:collapse; min-width:760px; }
-
-.chTable thead th{
-text-align:right;
-font-family:'IBM Plex Mono',monospace;
-font-size:10px;
-letter-spacing:0.8px;
-color:var(--text-3);
-font-weight:500;
-padding:11px 16px;
+.tileHead{
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:14px 16px;
 border-bottom:1px solid var(--line);
-background:var(--surface-2);
-white-space:nowrap;
+background:var(--panel-2);
 }
 
-.chTable tbody tr{ border-bottom:1px solid var(--line-soft); transition:background 0.12s; }
-.chTable tbody tr:last-child{ border-bottom:none; }
-.chTable tbody tr:hover{ background:var(--surface-2); }
+.tileHead .idWrap{
+display:flex;
+align-items:center;
+gap:10px;
+min-width:0;
+}
 
-.chTable td{ padding:12px 16px; vertical-align:middle; font-size:12.5px; }
+.tallyDot{
+width:10px;
+height:10px;
+border-radius:50%;
+flex-shrink:0;
+background:var(--off);
+box-shadow:0 0 0 3px rgba(255,75,92,0.12);
+}
 
-.statusCell{ display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.tallyDot.on{
+background:var(--live);
+box-shadow:0 0 8px var(--live-glow);
+animation:tallyPulse 1.8s ease-in-out infinite;
+}
 
-.dot{ width:8px; height:8px; border-radius:50%; background:var(--off); flex-shrink:0; }
-.dot.on{ background:var(--ok); box-shadow:0 0 8px 1px rgba(62,207,110,0.5); animation:dotPulse 2.2s ease-in-out infinite; }
-
-@keyframes dotPulse{ 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-
-.statusTxt{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.4px; }
-.statusTxt.on{ color:var(--ok); }
-.statusTxt.off{ color:var(--text-3); }
-
-.chName{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px; color:var(--text); }
-
-.urlCell{
-font-family:'IBM Plex Mono',monospace;
-font-size:11px;
-color:var(--text-2);
-direction:ltr;
-text-align:left;
-max-width:220px;
+.tileHead h3{
+margin:0;
+font-family:'JetBrains Mono', monospace;
+font-size:14px;
+font-weight:600;
+letter-spacing:0.5px;
+color:var(--text);
 overflow:hidden;
 text-overflow:ellipsis;
 white-space:nowrap;
-}
-
-.numCell{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text); text-align:center; }
-.numCell.dim{ color:var(--text-3); }
-
-.rowBtns{ display:flex; gap:5px; flex-wrap:nowrap; justify-content:flex-end; }
-
-button{
-font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
-padding:7px 11px;
-border:1px solid var(--line);
-border-radius:6px;
-cursor:pointer;
-font-weight:600;
-font-size:11.5px;
-background:var(--surface-2);
-color:var(--text-2);
-transition:0.15s;
-white-space:nowrap;
-}
-
-button:hover{ filter:brightness(1.2); }
-button:active{ transform:translateY(1px); }
-
-.rowBtns .start{ color:var(--ok); border-color:#1f4a30; }
-.rowBtns .stop{ color:var(--fault); border-color:#4a2124; }
-.rowBtns .del{ color:var(--text-3); }
-
-/* ---------- add channel form ---------- */
-
-.formCard{
-max-width:480px;
-background:var(--surface);
-border:1px solid var(--line);
-border-radius:10px;
-padding:22px;
-}
-
-.formCard label{
-display:block;
-font-family:'IBM Plex Mono',monospace;
-font-size:10px;
-letter-spacing:0.6px;
-color:var(--text-3);
-margin-bottom:6px;
-margin-top:14px;
-}
-
-.formCard label:first-of-type{ margin-top:0; }
-
-.formCard input{
-width:100%;
-padding:11px 13px;
-border-radius:7px;
-border:1px solid var(--line);
-background:var(--surface-2);
-color:var(--text);
-outline:none;
-font-family:'IBM Plex Mono',monospace;
-font-size:13px;
 direction:ltr;
 text-align:left;
 }
 
-.formCard input:focus{ border-color:var(--accent); }
-
-.formCard .submit{
-margin-top:20px;
-width:100%;
-background:var(--accent);
-color:#0b0d10;
-border:none;
-padding:12px;
-font-size:13px;
+.statusPill{
+font-family:'Oswald', sans-serif;
+font-size:11px;
+font-weight:600;
+letter-spacing:1px;
+padding:4px 10px;
+border-radius:4px;
+flex-shrink:0;
 }
 
-/* ---------- events ---------- */
+.statusPill.on{
+background:rgba(0,209,143,0.12);
+color:var(--live);
+border:1px solid rgba(0,209,143,0.35);
+}
 
-.evRow{
+.statusPill.off{
+background:rgba(255,75,92,0.12);
+color:var(--off);
+border:1px solid rgba(255,75,92,0.35);
+}
+
+.tileBody{
+padding:14px 16px;
+}
+
+.readout{
 display:flex;
-align-items:center;
 gap:14px;
-padding:12px 16px;
-border-bottom:1px solid var(--line-soft);
-font-size:12.5px;
+margin-bottom:12px;
 }
 
-.evRow:last-child{ border-bottom:none; }
+.readoutBox{
+flex:1;
+background:var(--panel-2);
+border:1px solid var(--line);
+border-radius:8px;
+padding:8px 12px;
+}
 
-.evIcon{ width:22px; text-align:center; flex-shrink:0; }
-.evIcon.on{ color:var(--ok); }
-.evIcon.off{ color:var(--fault); }
-.evBody{ flex:1; min-width:0; }
-.evChan{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--text); }
-.evMsg{ color:var(--text-2); }
-.evTime{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-3); white-space:nowrap; }
+.readoutBox .rLbl{
+font-family:'JetBrains Mono', monospace;
+font-size:9px;
+letter-spacing:1.5px;
+color:var(--text-dim);
+text-transform:uppercase;
+display:block;
+margin-bottom:3px;
+}
 
-/* ---------- log modal ---------- */
+.readoutBox .rVal{
+font-family:'JetBrains Mono', monospace;
+font-size:17px;
+font-weight:600;
+color:var(--signal);
+}
+
+.techLine{
+margin-bottom:8px;
+}
+
+.techLine .tLbl{
+font-family:'JetBrains Mono', monospace;
+font-size:9px;
+letter-spacing:1.5px;
+color:var(--text-dim);
+text-transform:uppercase;
+display:block;
+margin-bottom:3px;
+}
+
+.techLine .tVal{
+font-family:'JetBrains Mono', monospace;
+font-size:11px;
+color:#AEB8C9;
+word-break:break-all;
+direction:ltr;
+text-align:left;
+display:block;
+line-height:1.5;
+}
+
+.btns{
+display:flex;
+gap:6px;
+margin-top:14px;
+flex-wrap:wrap;
+}
+
+button{
+padding:9px 10px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-family:'IBM Plex Sans Arabic', sans-serif;
+font-weight:600;
+font-size:12.5px;
+transition:0.15s;
+color:var(--text);
+}
+
+button:hover{
+filter:brightness(1.15);
+}
+
+.start{background:rgba(0,209,143,0.14);color:var(--live);border:1px solid rgba(0,209,143,0.3)}
+.stop{background:rgba(255,75,92,0.14);color:var(--off);border:1px solid rgba(255,75,92,0.3)}
+.edit{background:rgba(63,169,245,0.14);color:var(--signal);border:1px solid rgba(63,169,245,0.3)}
+.del{background:var(--panel-2);color:var(--text-dim);border:1px solid var(--line)}
+
+input{
+width:100%;
+padding:12px;
+margin-bottom:10px;
+border-radius:8px;
+border:1px solid var(--line);
+background:var(--panel-2);
+color:var(--text);
+outline:none;
+font-family:'IBM Plex Sans Arabic', sans-serif;
+font-size:14px;
+}
+
+input:focus{
+border-color:var(--signal);
+}
+
+h2{
+font-family:'Oswald', sans-serif;
+letter-spacing:0.5px;
+font-weight:600;
+}
+
+hr{
+border:0;
+height:1px;
+background:var(--line);
+margin:10px 0;
+}
+
+#connStatus{
+position:fixed;
+top:14px;
+left:14px;
+padding:6px 12px;
+border-radius:6px;
+font-family:'JetBrains Mono', monospace;
+font-size:11px;
+letter-spacing:0.5px;
+font-weight:600;
+z-index:999;
+}
+
+.conn-ok{background:rgba(0,209,143,0.12);color:var(--live);border:1px solid rgba(0,209,143,0.35)}
+.conn-bad{background:rgba(255,75,92,0.12);color:var(--off);border:1px solid rgba(255,75,92,0.35)}
+
+/* ======================
+   📊 CONSOLE STAT STRIP
+   ====================== */
+
+.statsBar{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:0;
+margin-bottom:20px;
+background:var(--panel);
+border:1px solid var(--line);
+border-radius:var(--radius);
+overflow:hidden;
+}
+
+.statCard{
+padding:16px 18px;
+text-align:right;
+border-left:1px solid var(--line);
+position:relative;
+}
+
+.statCard:last-child{
+border-left:none;
+}
+
+.statCard .num{
+font-family:'JetBrains Mono', monospace;
+font-size:26px;
+font-weight:700;
+display:block;
+margin-bottom:4px;
+line-height:1;
+}
+
+.statCard .lbl{
+font-family:'Oswald', sans-serif;
+font-size:10.5px;
+letter-spacing:1px;
+color:var(--text-dim);
+text-transform:uppercase;
+}
+
+.statCard.live .num{color:var(--live)}
+.statCard.off .num{color:var(--off)}
+.statCard.info .num{color:var(--signal)}
+.statCard.warn .num{color:var(--amber)}
+
+.toolbar{
+display:flex;
+gap:10px;
+margin-bottom:18px;
+flex-wrap:wrap;
+}
+
+.toolbar input{
+flex:1 1 260px;
+margin-bottom:0;
+}
+
+.toolbar select{
+flex:0 1 260px;
+padding:12px;
+border-radius:8px;
+border:1px solid var(--line);
+background:var(--panel-2);
+color:var(--text);
+outline:none;
+cursor:pointer;
+font-family:'IBM Plex Sans Arabic', sans-serif;
+font-size:13.5px;
+}
+
+/* ======================
+   📜 EVENT LOG TIMELINE
+   ====================== */
+
+.eventRow{
+display:flex;
+align-items:flex-start;
+gap:12px;
+padding:12px 16px;
+background:var(--panel);
+border:1px solid var(--line);
+border-radius:8px;
+margin-bottom:8px;
+}
+
+.eventRow .evDot{
+width:8px;
+height:8px;
+border-radius:50%;
+margin-top:5px;
+flex-shrink:0;
+}
+
+.eventRow .evDot.live{background:var(--live);box-shadow:0 0 6px var(--live-glow)}
+.eventRow .evDot.off{background:var(--off)}
+
+.eventRow .evMain{
+flex:1;
+min-width:0;
+}
+
+.eventRow .evTitle{
+font-size:13.5px;
+font-weight:600;
+margin-bottom:2px;
+}
+
+.eventRow .evMsg{
+font-size:12.5px;
+color:var(--text-dim);
+}
+
+.eventRow .evTime{
+font-family:'JetBrains Mono', monospace;
+font-size:10.5px;
+color:var(--text-dim);
+white-space:nowrap;
+flex-shrink:0;
+}
+
+/* ======================
+   📄 LOG MODAL (terminal)
+   ====================== */
 
 .logOverlay{
 display:none;
 position:fixed;
 inset:0;
-background:rgba(4,5,7,0.72);
+background:rgba(5,7,10,0.8);
+backdrop-filter:blur(2px);
 z-index:2000;
 align-items:center;
 justify-content:center;
 padding:20px;
 }
 
-.logOverlay.show{ display:flex; }
+.logOverlay.show{
+display:flex;
+}
 
 .logModal{
-background:var(--surface);
+background:#0D1117;
 border:1px solid var(--line);
-border-radius:10px;
+border-radius:var(--radius);
 width:100%;
 max-width:800px;
 max-height:80vh;
 display:flex;
 flex-direction:column;
 overflow:hidden;
+box-shadow:0 20px 60px rgba(0,0,0,0.5);
 }
 
 .logHeader{
@@ -786,53 +967,94 @@ justify-content:space-between;
 align-items:center;
 padding:12px 16px;
 border-bottom:1px solid var(--line);
-background:var(--surface-2);
+background:var(--panel);
 }
 
-.logHeader h3{ margin:0; font-size:13px; font-family:'IBM Plex Mono',monospace; font-weight:500; }
+.logHeader h3{
+margin:0;
+font-family:'JetBrains Mono', monospace;
+font-size:13px;
+font-weight:600;
+color:var(--live);
+}
+
+.logHeader button{
+padding:7px 12px;
+font-size:11.5px;
+}
 
 .logBody{
-padding:14px 16px;
+padding:12px 16px;
 overflow-y:auto;
-font-family:'IBM Plex Mono',monospace;
-font-size:11px;
-color:var(--text-2);
+font-family:'JetBrains Mono', monospace;
+font-size:11.5px;
+color:#8FE3C0;
+background:#0D1117;
 white-space:pre-wrap;
 word-break:break-all;
 direction:ltr;
 text-align:left;
-background:var(--bg);
+line-height:1.6;
 }
 
-.logBody .logLine{ padding:3px 0; border-bottom:1px solid var(--line-soft); }
-.logBody .logTime{ color:var(--accent); margin-left:8px; }
+.logBody .logLine{
+padding:2px 0;
+border-bottom:1px solid #161B22;
+}
 
-/* ---------- mobile ---------- */
+.logBody .logTime{
+color:var(--signal);
+margin-left:8px;
+}
+
+@keyframes tallyPulse{
+0%, 100%{opacity:1}
+50%{opacity:0.45}
+}
+
+/* ======================
+   📱 MOBILE / RESPONSIVE
+   ====================== */
 
 .menuBtn{
 display:none;
 position:fixed;
 top:12px;
-left:12px;
+right:12px;
 z-index:1100;
-width:40px;
-height:40px;
+width:42px;
+height:42px;
 border-radius:8px;
 border:1px solid var(--line);
-background:var(--surface);
-color:var(--text);
-font-size:17px;
+background:var(--panel);
+color:var(--signal);
+font-size:18px;
 cursor:pointer;
 align-items:center;
 justify-content:center;
 }
 
-.overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; }
-.overlay.show{ display:block; }
+.overlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.55);
+z-index:999;
+}
+
+.overlay.show{
+display:block;
+}
 
 @media (max-width: 820px){
 
-.menuBtn{ display:flex; }
+body{
+display:block;
+}
+
+.menuBtn{
+display:flex;
+}
 
 .side{
 position:fixed;
@@ -840,123 +1062,141 @@ top:0;
 right:0;
 height:100%;
 height:100dvh;
-width:110px;
 transform:translateX(100%);
 box-shadow:-10px 0 30px rgba(0,0,0,0.5);
+overflow-y:auto;
 }
 
-.side.open{ transform:translateX(0); }
+.side.open{
+transform:translateX(0);
+}
 
-.topbar{ padding:0 14px 0 58px; }
-.topbar .titleBlock .t2{ display:none; }
-.clock{ font-size:15px; padding:5px 9px; }
-.content{ padding:16px 14px 24px 14px; }
+.main{
+padding:70px 14px 20px 14px;
+}
 
-.statusStrip{ grid-template-columns:repeat(2,1fr); }
+.grid{
+grid-template-columns:1fr;
+gap:12px;
+}
+
+.btns button{
+flex:1 1 40%;
+font-size:12px;
+padding:9px 6px;
+}
+
+.toolbar{
+flex-direction:column;
+}
+
+.toolbar select{
+flex:1 1 auto;
+}
+
+.statsBar{
+grid-template-columns:repeat(2,1fr);
+}
+
+.statCard{
+padding:12px 14px;
+border-bottom:1px solid var(--line);
+}
+
+.statCard .num{
+font-size:20px;
+}
+
+#connStatus{
+top:auto;
+bottom:10px;
+left:10px;
+right:auto;
+}
 
 }
 
+@media (max-width: 380px){
+
+.btns button{
+flex:1 1 100%;
+}
+
+}
 </style>
+
 </head>
 
 <body>
 
+<div id="connStatus" class="conn-bad">⏳ اتصال...</div>
+
 <button class="menuBtn" onclick="toggleMenu()">☰</button>
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
-<div class="app">
-
 <div class="side" id="sideMenu">
-<div class="brandMark">📡</div>
-<nav>
-<button class="navActive" id="navChannels" onclick="show('channels');closeMenu()">
-<span>📺</span><span class="navLbl">قنوات</span>
-</button>
-<button id="navAdd" onclick="show('add');closeMenu()">
-<span>➕</span><span class="navLbl">إضافة</span>
-</button>
-<button id="navEvents" onclick="show('events');closeMenu()">
-<span>📜</span><span class="navLbl">أحداث</span>
-</button>
-</nav>
-<div class="railFoot">
-<button class="go" onclick="startAll()" title="تشغيل الكل">
-<span>▶</span><span class="navLbl">الكل</span>
-</button>
-<button class="stopAll" onclick="stopAll()" title="إيقاف الكل">
-<span>⏹</span><span class="navLbl">إيقاف</span>
-</button>
-</div>
+
+<div class="brand">
+<div class="tally"></div>
+<div class="word">IPTV CONTROL<small>BROADCAST CONSOLE</small></div>
 </div>
 
-<div class="workspace">
+<div class="navGroup">
 
-<div class="topbar">
-<div class="titleBlock">
-<span class="t1">غرفة التحكم الرئيسية</span>
-<span class="t2">IPTV MASTER CONTROL</span>
+<div class="navLabel">التنقل</div>
+
+<button onclick="show('channels');closeMenu()">📺 القنوات</button>
+<button onclick="show('add');closeMenu()">➕ إضافة قناة</button>
+<button onclick="show('events');closeMenu()">📜 سجل الأحداث</button>
+
+<div class="rackDivider"></div>
+
+<div class="navLabel">تحكم جماعي</div>
+
+<button class="bulkBtn bulkOn" onclick="startAll()">▶ تشغيل الكل</button>
+<button class="bulkBtn bulkOff" onclick="stopAll()">⏹ إيقاف الكل</button>
+
 </div>
-<div class="metaRight">
-<div class="clock mono" id="clock">--:--:--</div>
-<div id="connStatus" class="pill conn-bad">⏳ اتصال...</div>
-</div>
+
 </div>
 
-<div class="content">
+<div class="main">
 
-<section id="channels">
+<div id="channels">
 
-<div id="statsBar" class="statusStrip"></div>
+<div class="pageTitle">القنوات المباشرة</div>
+
+<div id="statsBar" class="statsBar"></div>
 
 <div class="toolbar">
 <input id="searchBox" placeholder="🔍 بحث عن قناة..." oninput="onSearch(this.value)">
 <select id="sortSelect" onchange="onSort(this.value)">
-<option value="status">ترتيب: الحالة (شغال أولاً)</option>
-<option value="viewers">ترتيب: الأعلى مشاهدين</option>
-<option value="name">ترتيب: الاسم</option>
+<option value="status">🔀 ترتيب: الحالة (شغال أولاً)</option>
+<option value="viewers">👁️ ترتيب: الأعلى مشاهدين</option>
+<option value="name">🔤 ترتيب: الاسم</option>
 </select>
 </div>
 
-<div class="tableWrap">
-<table class="chTable">
-<thead>
-<tr>
-<th>الحالة</th>
-<th>القناة</th>
-<th>المصدر (Input)</th>
-<th>الخرج (Output)</th>
-<th>المشاهدون</th>
-<th>الإجمالي</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="list"></tbody>
-</table>
+<div id="list" class="grid"></div>
 </div>
 
-</section>
+<div id="add" style="display:none">
 
-<section id="add" hidden>
+<div class="pageTitle">إضافة قناة جديدة</div>
 
-<div class="formCard">
-<label>Channel ID</label>
-<input id="id" placeholder="ch12">
-<label>Input URL</label>
-<input id="input" placeholder="rtmp:// or http://...">
-<label>RTMP Output</label>
-<input id="output" placeholder="rtmp://...">
-<button class="submit" onclick="addChannel()">➕ إضافة القناة</button>
-</div>
+<input id="id" placeholder="Channel ID">
+<input id="input" placeholder="Input URL">
+<input id="output" placeholder="RTMP Output">
 
-</section>
-
-<section id="events" hidden>
-
-<div class="tableWrap" id="eventsList"></div>
-
-</section>
+<button class="start" onclick="addChannel()">➕ إضافة القناة</button>
 
 </div>
+
+<div id="events" style="display:none">
+
+<div class="pageTitle">سجل الأحداث</div>
+
+<div id="eventsList"></div>
 
 </div>
 
@@ -966,14 +1206,14 @@ box-shadow:-10px 0 30px rgba(0,0,0,0.5);
 <div class="logModal" onclick="event.stopPropagation()">
 
 <div class="logHeader">
-<h3 id="logTitle">لوج القناة</h3>
-<button onclick="closeLogs()">✕ إغلاق</button>
+<h3 id="logTitle">📄 اللوج</h3>
+<button class="del" onclick="closeLogs()">✕ إغلاق</button>
 </div>
 
 <div class="logBody" id="logBody"></div>
 
 <div class="logHeader">
-<button onclick="refreshLogs()">🔄 تحديث</button>
+<button class="edit" onclick="refreshLogs()">🔄 تحديث</button>
 </div>
 
 </div>
@@ -998,21 +1238,10 @@ document.getElementById("overlay").classList.remove("show");
 }
 
 function show(id){
-document.getElementById("channels").hidden = (id !== "channels");
-document.getElementById("add").hidden = (id !== "add");
-document.getElementById("events").hidden = (id !== "events");
-
-document.getElementById("navChannels").classList.toggle("navActive", id === "channels");
-document.getElementById("navAdd").classList.toggle("navActive", id === "add");
-document.getElementById("navEvents").classList.toggle("navActive", id === "events");
-}
-
-function updateClock(){
-const el = document.getElementById("clock");
-if(!el) return;
-const now = new Date();
-const pad = n => String(n).padStart(2,"0");
-el.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
+document.getElementById("channels").style.display="none";
+document.getElementById("add").style.display="none";
+document.getElementById("events").style.display="none";
+document.getElementById(id).style.display="block";
 }
 
 function renderStats(){
@@ -1020,35 +1249,35 @@ function renderStats(){
 const box = document.getElementById("statsBar");
 if(!box) return;
 
-let liveCount = 0, offCount = 0, totalViewers = 0;
+let live = 0, off = 0, totalViewers = 0;
 
 for(const id in channelsCache){
 if(statusCache[id]?.active){
-liveCount++;
+live++;
 totalViewers += statusCache[id]?.viewers || 0;
 } else {
-offCount++;
+off++;
 }
 }
 
 const restarts = eventsCache.filter(e => e.type === "restart").length;
 
 box.innerHTML = \`
-<div class="stat ok">
-<span class="num">\${liveCount}</span>
-<span class="lbl">TRANSMITTING</span>
+<div class="statCard live">
+<span class="num mono">\${live}</span>
+<span class="lbl">ON AIR</span>
 </div>
-<div class="stat off">
-<span class="num">\${offCount}</span>
+<div class="statCard off">
+<span class="num mono">\${off}</span>
 <span class="lbl">OFFLINE</span>
 </div>
-<div class="stat accent">
-<span class="num">\${totalViewers}</span>
-<span class="lbl">LIVE VIEWERS</span>
+<div class="statCard info">
+<span class="num mono">\${totalViewers}</span>
+<span class="lbl">إجمالي المشاهدين</span>
 </div>
-<div class="stat warn">
-<span class="num">\${restarts}</span>
-<span class="lbl">AUTO-RESTARTS</span>
+<div class="statCard warn">
+<span class="num mono">\${restarts}</span>
+<span class="lbl">إعادة تشغيل تلقائي</span>
 </div>
 \`;
 
@@ -1095,43 +1324,63 @@ const ids = sortedChannelIds();
 
 for(const id of ids){
 
-const isOn = !!statusCache[id]?.active;
 const current = statusCache[id]?.viewers || 0;
-const total = statusCache[id]?.total || 0;
+const isOn = !!statusCache[id]?.active;
 
 box.innerHTML += \`
-<tr>
-<td>
-<div class="statusCell">
-<span class="dot \${isOn ? 'on' : ''}"></span>
-<span class="statusTxt \${isOn ? 'on' : 'off'}">\${isOn ? 'يبث' : 'متوقف'}</span>
+
+<div class="card">
+
+<div class="tileHead">
+<div class="idWrap">
+<div class="tallyDot \${isOn ? 'on' : ''}"></div>
+<h3>\${id}</h3>
 </div>
-</td>
-<td class="chName">\${id}</td>
-<td class="urlCell" title="\${channelsCache[id].input || ''}">\${channelsCache[id].input || '—'}</td>
-<td class="urlCell" title="\${channelsCache[id].output || ''}">\${channelsCache[id].output || '—'}</td>
-<td class="numCell">\${current}</td>
-<td class="numCell dim">\${total}</td>
-<td>
-<div class="rowBtns">
-<button class="start" onclick="start('\${id}')">▶</button>
-<button class="stop" onclick="stop('\${id}')">⏹</button>
-<button onclick="editChannel('\${id}')">✏</button>
-<button onclick="showLogs('\${id}')">📄</button>
-<button class="del" onclick="del('\${id}')">🗑</button>
+<div class="statusPill \${isOn ? 'on' : 'off'}">\${isOn ? 'ON AIR' : 'OFFLINE'}</div>
 </div>
-</td>
-</tr>
+
+<div class="tileBody">
+
+<div class="readout">
+<div class="readoutBox">
+<span class="rLbl">الحالي</span>
+<span class="rVal">\${current}</span>
+</div>
+<div class="readoutBox">
+<span class="rLbl">الإجمالي</span>
+<span class="rVal">\${statusCache[id]?.total || 0}</span>
+</div>
+</div>
+
+<div class="techLine">
+<span class="tLbl">SRC · INPUT</span>
+<span class="tVal">\${channelsCache[id].input || '—'}</span>
+</div>
+
+<div class="techLine">
+<span class="tLbl">DST · OUTPUT</span>
+<span class="tVal">\${channelsCache[id].output || '—'}</span>
+</div>
+
+<div class="btns">
+<button class="start" onclick="start('\${id}')">▶ تشغيل</button>
+<button class="stop" onclick="stop('\${id}')">⏹ إيقاف</button>
+<button class="edit" onclick="editChannel('\${id}')">✏ تعديل</button>
+<button class="edit" onclick="showLogs('\${id}')">📄 اللوج</button>
+<button class="del" onclick="del('\${id}')">🗑 حذف</button>
+</div>
+
+</div>
+
+</div>
+
 \`;
 
 }
 
-if(ids.length === 0){
-box.innerHTML = '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text-3)">لا يوجد قنوات مطابقة</td></tr>';
 }
 
-}
-
+// تحميل كامل (channels + status) - يُستخدم عند فتح الصفحة أو بعد أي تعديل
 async function load(){
 const ch = await fetch("/channels");
 channelsCache = await ch.json();
@@ -1142,6 +1391,7 @@ statusCache = await st.json();
 render();
 }
 
+// تحميل سجل الأحداث (مرة واحدة عند فتح الصفحة)
 async function loadEvents(){
 const r = await fetch("/events");
 eventsCache = await r.json();
@@ -1150,11 +1400,11 @@ renderStats();
 }
 
 function eventLabel(type){
-if(type === "start") return { icon:"▶", cls:"on", text:"تشغيل" };
-if(type === "stop") return { icon:"⏹", cls:"off", text:"إيقاف" };
-if(type === "exit") return { icon:"❌", cls:"off", text:"خروج غير متوقع" };
-if(type === "restart") return { icon:"🔄", cls:"on", text:"إعادة تشغيل" };
-return { icon:"•", cls:"", text:type };
+if(type === "start") return { icon:"▶", dot:"live", text:"تشغيل" };
+if(type === "stop") return { icon:"⏹", dot:"off", text:"إيقاف" };
+if(type === "exit") return { icon:"❌", dot:"off", text:"خروج غير متوقع" };
+if(type === "restart") return { icon:"🔄", dot:"live", text:"إعادة تشغيل" };
+return { icon:"•", dot:"", text:type };
 }
 
 function renderEvents(){
@@ -1163,7 +1413,7 @@ const box = document.getElementById("eventsList");
 if(!box) return;
 
 if(eventsCache.length === 0){
-box.innerHTML = '<div class="evRow" style="color:var(--text-3)">لا يوجد أحداث بعد</div>';
+box.innerHTML = '<div class="techLine"><span class="tVal">لا يوجد أحداث بعد</span></div>';
 return;
 }
 
@@ -1176,13 +1426,13 @@ const t = new Date(ev.time);
 const timeStr = t.toLocaleString("ar-EG");
 
 box.innerHTML += \`
-<div class="evRow">
-<span class="evIcon \${lbl.cls}">\${lbl.icon}</span>
-<div class="evBody">
-<span class="evChan">\${ev.id}</span> — \${lbl.text}
+<div class="eventRow">
+<div class="evDot \${lbl.dot}"></div>
+<div class="evMain">
+<div class="evTitle">\${lbl.icon} \${lbl.text} — <span class="mono">\${ev.id}</span></div>
 <div class="evMsg">\${ev.message}</div>
 </div>
-<span class="evTime">\${timeStr}</span>
+<div class="evTime">\${timeStr}</div>
 </div>
 \`;
 
@@ -1199,7 +1449,7 @@ let currentLogChannel = null;
 
 async function showLogs(id){
 currentLogChannel = id;
-document.getElementById("logTitle").innerText = "لوج القناة: " + id;
+document.getElementById("logTitle").innerText = "📄 لوج القناة: " + id;
 document.getElementById("logOverlay").classList.add("show");
 await refreshLogs();
 }
@@ -1243,6 +1493,9 @@ await fetch("/stop-all");
 load();
 }
 
+// ============================
+// 🔌 WebSocket - تحديث لحظي لعدد المشاهدين وحالة البث
+// ============================
 let ws;
 let wsReconnectTimer;
 
@@ -1251,12 +1504,12 @@ const proto = location.protocol === "https:" ? "wss:" : "ws:";
 ws = new WebSocket(proto + "//" + location.host);
 
 ws.onopen = () => {
-document.getElementById("connStatus").className = "pill conn-ok";
+document.getElementById("connStatus").className = "conn-ok";
 document.getElementById("connStatus").innerText = "🟢 متصل مباشر";
 };
 
 ws.onclose = () => {
-document.getElementById("connStatus").className = "pill conn-bad";
+document.getElementById("connStatus").className = "conn-bad";
 document.getElementById("connStatus").innerText = "🔴 منقطع - إعادة محاولة...";
 clearTimeout(wsReconnectTimer);
 wsReconnectTimer = setTimeout(connectWS, 3000);
@@ -1282,6 +1535,7 @@ renderStats();
 };
 }
 
+// ▶ actions
 async function start(id){
 await fetch("/start?id="+id);
 load();
@@ -1334,13 +1588,12 @@ output:outputVal
 load();
 }
 
-updateClock();
-setInterval(updateClock, 1000);
-
+// 🚀 بداية التشغيل
 load();
 loadEvents();
 connectWS();
 
+// تحديث احتياطي لو الـ WebSocket انقطع لفترة (fallback فقط)
 setInterval(()=>{
 if(!ws || ws.readyState !== 1) load();
 }, 5000);
