@@ -434,6 +434,16 @@ app.get("/dashboard", (req, res) => {
 --radius-lg:14px;
 }
 
+html[data-accent="teal"]{
+--accent:#0F6E56;
+--accent-bg:#E1F5EE;
+}
+
+html[data-accent="amber"]{
+--accent:#854F0B;
+--accent-bg:#FAEEDA;
+}
+
 *{ box-sizing:border-box; }
 
 html, body{ margin:0; padding:0; overflow-x:hidden; }
@@ -560,6 +570,62 @@ font-weight:500;
 
 .conn-ok{ background:var(--success-bg); color:var(--success); }
 .conn-bad{ background:var(--danger-bg); color:var(--danger); }
+
+.iconBtn{
+width:36px;
+height:36px;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:9px;
+border:1px solid var(--border);
+background:var(--surface);
+color:var(--text-2);
+cursor:pointer;
+font-size:16px;
+padding:0;
+}
+
+.iconBtn:hover{ border-color:var(--border-strong); background:var(--surface-2); }
+
+.themeMenu{
+position:absolute;
+top:56px;
+left:24px;
+background:var(--surface);
+border:1px solid var(--border);
+border-radius:var(--radius);
+padding:8px;
+display:none;
+flex-direction:column;
+gap:2px;
+z-index:1500;
+box-shadow:0 8px 24px rgba(16,24,40,0.12);
+min-width:160px;
+}
+
+.themeMenu.show{ display:flex; }
+
+.themeMenu button{
+display:flex;
+align-items:center;
+gap:8px;
+background:transparent;
+border:1px solid transparent;
+color:var(--text-2);
+padding:8px 10px;
+border-radius:8px;
+font-size:13px;
+font-weight:500;
+cursor:pointer;
+text-align:right;
+width:100%;
+}
+
+.themeMenu button:hover{ background:var(--surface-2); }
+.themeMenu button.themeActive{ color:var(--text); border-color:var(--border); background:var(--surface-2); }
+
+.swatch{ width:12px; height:12px; border-radius:50%; flex-shrink:0; }
 
 .content{ flex:1; padding:24px; overflow:auto; }
 
@@ -970,7 +1036,17 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 
 <div class="topbar">
 <h1>القنوات المباشرة</h1>
+<div style="display:flex;align-items:center;gap:10px;position:relative">
+<button class="iconBtn" onclick="toggleThemeMenu(event)" title="تغيير اللون"><i class="ti ti-palette"></i></button>
 <div id="connStatus" class="pill conn-bad"><i class="ti ti-loader-2"></i>اتصال...</div>
+
+<div class="themeMenu" id="themeMenu">
+<button data-a="blue" onclick="setAccent('blue')"><span class="swatch" style="background:#2563EB"></span>أزرق</button>
+<button data-a="teal" onclick="setAccent('teal')"><span class="swatch" style="background:#0F6E56"></span>أخضر مائي</button>
+<button data-a="amber" onclick="setAccent('amber')"><span class="swatch" style="background:#854F0B"></span>كهرماني</button>
+</div>
+
+</div>
 </div>
 
 <div class="content">
@@ -1059,6 +1135,30 @@ let eventsCache = [];
 let searchTerm = "";
 let categoryFilter = "";
 let sortMode = "status";
+
+function setAccent(name){
+document.documentElement.setAttribute("data-accent", name === "blue" ? "" : name);
+try{ localStorage.setItem("iptv_accent", name); }catch(e){}
+document.querySelectorAll("#themeMenu button").forEach(b => {
+b.classList.toggle("themeActive", b.dataset.a === name);
+});
+document.getElementById("themeMenu").classList.remove("show");
+}
+
+function toggleThemeMenu(e){
+e.stopPropagation();
+document.getElementById("themeMenu").classList.toggle("show");
+}
+
+document.addEventListener("click", () => {
+document.getElementById("themeMenu").classList.remove("show");
+});
+
+(function initAccent(){
+let saved = "blue";
+try{ saved = localStorage.getItem("iptv_accent") || "blue"; }catch(e){}
+setAccent(saved);
+})();
 
 function toggleMenu(){
 document.getElementById("sideMenu").classList.toggle("open");
