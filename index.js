@@ -198,15 +198,20 @@ function spawnStream(id) {
     "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[base];[1:v]scale=-1:3000[logo];[base][logo]overlay=W-w-2:2",
 
     "-c:v", "libx264",
-    "-preset", "veryfast",
-    "-tune", "zerolatency",
+"-preset", "veryfast",
+"-tune", "zerolatency",
 
-    "-b:v", "2500k",
-    "-maxrate", "2500k",
-    "-bufsize", "4000k",
+"-pix_fmt", "yuv420p",
 
-    "-r", "25",
-    "-g", "50",
+"-profile:v", "high",
+"-level", "4.1",
+
+"-b:v", "5000k",
+"-maxrate", "5500k",
+"-bufsize", "10000k",
+
+"-r", "25",
+"-g", "50",
 
     "-c:a", "aac",
     "-b:a", "128k",
