@@ -818,6 +818,36 @@ white-space:nowrap;
 
 .btnRow{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
 
+.editField{ margin-bottom:9px; }
+.editField .tLbl{ font-size:10px; color:var(--text-3); margin-bottom:3px; }
+.editField input{
+width:100%;
+padding:7px 9px;
+border-radius:7px;
+border:1px solid var(--border);
+background:var(--surface-2);
+color:var(--text);
+outline:none;
+font-family:'IBM Plex Mono', monospace;
+font-size:11.5px;
+direction:ltr;
+text-align:left;
+}
+.editField input:focus{ border-color:var(--accent); }
+
+.editActions{ display:flex; gap:6px; margin-top:12px; }
+.editActions button{
+flex:1;
+padding:9px;
+border-radius:8px;
+border:1px solid var(--border);
+cursor:pointer;
+font-weight:600;
+font-size:12.5px;
+}
+.editActions .saveBtn{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.editActions .cancelBtn{ background:var(--surface-2); color:var(--text-2); }
+
 .iBtn{
 width:32px;
 height:32px;
@@ -1181,6 +1211,15 @@ let searchTerm = "";
 let categoryFilter = "";
 let sortMode = "status";
 
+// حالة التعديل داخل الصفحة (بدون نافذة منبثقة)
+let editingId = null;
+let editDraft = {};
+
+function updateDraft(id, field, val){
+if(!editDraft[id]) editDraft[id] = {};
+editDraft[id][field] = val;
+}
+
 function imgFallback(el){
 el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
 }
@@ -1360,6 +1399,35 @@ box.innerHTML += \`
 <div class="statusPill \${isOn ? 'on' : 'off'}"><i class="ti ti-point-filled"></i>\${isOn ? 'شغالة' : 'متوقفة'}</div>
 </div>
 
+\${ editingId === id ? \`
+
+<div class="editField">
+<div class="tLbl">INPUT URL</div>
+<input value="\${(editDraft[id]?.input ?? ch.input ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','input',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">RTMP OUTPUT</div>
+<input value="\${(editDraft[id]?.output ?? ch.output ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','output',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">LOGO URL</div>
+<input value="\${(editDraft[id]?.logo ?? ch.logo ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','logo',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">CATEGORY</div>
+<input value="\${(editDraft[id]?.category ?? ch.category ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','category',this.value)">
+</div>
+
+<div class="editActions">
+<button class="saveBtn" onclick="saveEdit('\${id}')">حفظ</button>
+<button class="cancelBtn" onclick="cancelEdit()">إلغاء</button>
+</div>
+
+\` : \`
+
 <div class="readoutRow">
 <div class="readoutBox">
 <div class="rLbl">الحالي</div>
@@ -1388,6 +1456,8 @@ box.innerHTML += \`
 <button class="iBtn" onclick="showLogs('\${id}')" title="اللوج"><i class="ti ti-file-text"></i></button>
 <button class="iBtn" onclick="del('\${id}')" title="حذف"><i class="ti ti-trash"></i></button>
 </div>
+
+\` }
 
 </div>
 \`;
@@ -1533,7 +1603,7 @@ const parsed = JSON.parse(msg.data);
 
 if(parsed.type === "status"){
 statusCache = parsed.data;
-render();
+if(!editingId) render();
 } else if(parsed.type === "event"){
 eventsCache.unshift(parsed.data);
 if(eventsCache.length > 200) eventsCache.pop();
@@ -1590,35 +1660,40 @@ await fetch("/channel/"+id,{ method:"DELETE" });
 load();
 }
 
-async function editChannel(id){
-const r = await fetch("/channels");
-const data = await r.json();
-const ch = data[id];
+function editChannel(id){
+editDraft[id] = {
+input: channelsCache[id].input || "",
+output: channelsCache[id].output || "",
+logo: channelsCache[id].logo || "",
+category: channelsCache[id].category || ""
+};
+editingId = id;
+render();
+}
 
-const inputVal = prompt("Input URL", ch.input);
-if(inputVal === null) return;
-
-const outputVal = prompt("RTMP Output", ch.output);
-if(outputVal === null) return;
-
-const logoVal = prompt("Logo URL (اتركه فاضي لو مفيش)", ch.logo || "");
-if(logoVal === null) return;
-
-const categoryVal = prompt("Category (اتركه فاضي لو مفيش)", ch.category || "");
-if(categoryVal === null) return;
+async function saveEdit(id){
+const draft = editDraft[id] || {};
 
 await fetch("/channel/"+id,{
 method:"PUT",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({
-input: inputVal,
-output: outputVal,
-logo: logoVal,
-category: categoryVal
+input: draft.input ?? channelsCache[id].input,
+output: draft.output ?? channelsCache[id].output,
+logo: draft.logo ?? "",
+category: draft.category ?? ""
 })
 });
 
-load();
+editingId = null;
+delete editDraft[id];
+await load();
+}
+
+function cancelEdit(){
+if(editingId) delete editDraft[editingId];
+editingId = null;
+render();
 }
 
 load();
@@ -1626,7 +1701,7 @@ loadEvents();
 connectWS();
 
 setInterval(()=>{
-if(!ws || ws.readyState !== 1) load();
+if((!ws || ws.readyState !== 1) && !editingId) load();
 }, 5000);
 
 </script>
