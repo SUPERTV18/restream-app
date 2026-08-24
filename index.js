@@ -9,8 +9,6 @@ app.use(express.json());
 // 🎯 STATE
 // ======================
 let ffmpegProcesses = {};
-let viewerIntervals = {};
-let viewers = {};
 
 // تتبع هل القناة اتوقفت يدويًا (لمنع إعادة التشغيل التلقائي في الحالة دي)
 let manuallyStopped = {};
@@ -27,8 +25,12 @@ function pushLog(id, line) {
   }
 }
 
-// إجمالي المشاهدات (لا يتم تصفيره)
-let totalViews = {};
+// ======================
+// 📊 مقاييس حقيقية (وقت بث فعلي + بت ريت فعلي من ffmpeg)
+// ======================
+let liveSince = {};       // id -> timestamp بداية الجلسة الحالية (لو شغالة)
+let totalOnairMs = {};    // id -> إجمالي وقت البث التراكمي بالميلي ثانية
+let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من ffmpeg
 
 // عملاء الـ WebSocket المتصلين بالداشبورد
 let clients = [];
@@ -184,6 +186,11 @@ function spawnStream(id) {
   // أي تشغيل (يدوي أو تلقائي) يلغي حالة "متوقفة يدويًا"
   manuallyStopped[id] = false;
 
+  // بداية جلسة بث حقيقية جديدة
+  liveSince[id] = Date.now();
+  if (totalOnairMs[id] == null) totalOnairMs[id] = 0;
+  lastBitrateKbps[id] = null;
+
   const ffmpeg = spawn("ffmpeg", [
     "-re",
 
@@ -222,26 +229,6 @@ function spawnStream(id) {
 
   ffmpegProcesses[id] = ffmpeg;
 
-  // متابعة عدد المشاهدين (تقريبي - غير مرتبط باتصالات فعلية)
-  viewers[id] = Math.floor(Math.random() * 5) + 2;
-
-  if (totalViews[id] == null) {
-    totalViews[id] = 0;
-  }
-
-  if (viewerIntervals[id]) clearInterval(viewerIntervals[id]);
-
-  viewerIntervals[id] = setInterval(() => {
-    const r = Math.random();
-
-    if (r > 0.7) {
-      viewers[id]++;
-      totalViews[id]++;
-    } else if (r < 0.3) {
-      viewers[id] = Math.max(1, viewers[id] - 1);
-    }
-  }, 5000);
-
   ffmpeg.stderr.on("data", (d) => {
     const text = d.toString();
     console.log(`[${id}] ${text}`);
@@ -250,16 +237,23 @@ function spawnStream(id) {
       const trimmed = line.trim();
       if (trimmed) pushLog(id, trimmed);
     });
+
+    // قراءة البت ريت الحقيقي اللي ffmpeg بيبعته فعليًا
+    const match = text.match(/bitrate=\s*([\d.]+)\s*kbits\/s/i);
+    if (match) {
+      lastBitrateKbps[id] = parseFloat(match[1]);
+    }
   });
 
   ffmpeg.on("exit", () => {
     delete ffmpegProcesses[id];
-    viewers[id] = 0;
 
-    if (viewerIntervals[id]) {
-      clearInterval(viewerIntervals[id]);
-      delete viewerIntervals[id];
+    // نضيف مدة الجلسة دي لإجمالي وقت البث الحقيقي قبل ما نصفرها
+    if (liveSince[id]) {
+      totalOnairMs[id] = (totalOnairMs[id] || 0) + (Date.now() - liveSince[id]);
+      delete liveSince[id];
     }
+    lastBitrateKbps[id] = null;
 
     // لو اتوقفت يدويًا، منعملش إعادة تشغيل تلقائي
     if (manuallyStopped[id]) {
@@ -305,13 +299,6 @@ app.get("/stop", (req, res) => {
     logEvent(id, "stop", "تم إيقاف القناة يدويًا");
   }
 
-  viewers[id] = 0;
-
-  if (viewerIntervals[id]) {
-    clearInterval(viewerIntervals[id]);
-    delete viewerIntervals[id];
-  }
-
   res.send("stopped " + id);
 });
 
@@ -331,11 +318,6 @@ app.get("/stop-all", (req, res) => {
       delete ffmpegProcesses[id];
       logEvent(id, "stop", "تم إيقاف القناة يدويًا (إيقاف الكل)");
     }
-    viewers[id] = 0;
-    if (viewerIntervals[id]) {
-      clearInterval(viewerIntervals[id]);
-      delete viewerIntervals[id];
-    }
   }
   res.json({ ok: true });
 });
@@ -353,10 +335,14 @@ app.get("/status", (req, res) => {
   const result = {};
 
   for (const id in channels) {
+    const active = !!ffmpegProcesses[id];
+    const currentSessionMs = active && liveSince[id] ? (Date.now() - liveSince[id]) : 0;
+
     result[id] = {
-      active: !!ffmpegProcesses[id],
-      viewers: viewers[id] || 0,
-      total: totalViews[id] || 0
+      active,
+      uptimeSeconds: Math.floor(currentSessionMs / 1000),
+      totalSeconds: Math.floor(((totalOnairMs[id] || 0) + currentSessionMs) / 1000),
+      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null
     };
   }
 
@@ -1142,7 +1128,7 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 </select>
 <select id="sortSelect" onchange="onSort(this.value)">
 <option value="status">ترتيب: الحالة</option>
-<option value="viewers">ترتيب: الأعلى مشاهدين</option>
+<option value="uptime">ترتيب: الأطول بثًا</option>
 <option value="name">ترتيب: الاسم</option>
 </select>
 </div>
@@ -1239,6 +1225,16 @@ el.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(n
 updateClock();
 setInterval(updateClock, 1000);
 
+function formatDuration(totalSeconds){
+totalSeconds = totalSeconds || 0;
+const h = Math.floor(totalSeconds / 3600);
+const m = Math.floor((totalSeconds % 3600) / 60);
+const s = Math.floor(totalSeconds % 60);
+const pad = n => String(n).padStart(2,"0");
+if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
+return m + ":" + pad(s);
+}
+
 function setAccent(name){
 document.documentElement.setAttribute("data-accent", name === "blue" ? "" : name);
 try{ localStorage.setItem("iptv_accent", name); }catch(e){}
@@ -1288,18 +1284,22 @@ function renderStats(){
 const box = document.getElementById("statsBar");
 if(!box) return;
 
-let live = 0, off = 0, totalViewers = 0;
+let live = 0, off = 0, bitrateSum = 0, bitrateCount = 0;
 
 for(const id in channelsCache){
 if(statusCache[id]?.active){
 live++;
-totalViewers += statusCache[id]?.viewers || 0;
+if(statusCache[id]?.bitrateKbps){
+bitrateSum += statusCache[id].bitrateKbps;
+bitrateCount++;
+}
 } else {
 off++;
 }
 }
 
 const restarts = eventsCache.filter(e => e.type === "restart").length;
+const avgBitrate = bitrateCount > 0 ? Math.round(bitrateSum / bitrateCount) : 0;
 
 box.innerHTML = \`
 <div class="statCard ok">
@@ -1311,8 +1311,8 @@ box.innerHTML = \`
 <div class="num mono">\${off}</div>
 </div>
 <div class="statCard accent">
-<div class="lbl"><i class="ti ti-eye"></i>مشاهدين الآن</div>
-<div class="num mono">\${totalViewers}</div>
+<div class="lbl"><i class="ti ti-gauge"></i>متوسط البت ريت</div>
+<div class="num mono">\${avgBitrate}<span style="font-size:13px">kbps</span></div>
 </div>
 <div class="statCard warn">
 <div class="lbl"><i class="ti ti-refresh"></i>إعادة تشغيل</div>
@@ -1359,8 +1359,8 @@ const aA = statusCache[a]?.active ? 1 : 0;
 const bA = statusCache[b]?.active ? 1 : 0;
 return bA - aA;
 });
-} else if(sortMode === "viewers"){
-ids.sort((a,b) => (statusCache[b]?.viewers||0) - (statusCache[a]?.viewers||0));
+} else if(sortMode === "uptime"){
+ids.sort((a,b) => (statusCache[b]?.uptimeSeconds||0) - (statusCache[a]?.uptimeSeconds||0));
 } else if(sortMode === "name"){
 ids.sort((a,b) => a.localeCompare(b));
 }
@@ -1386,8 +1386,9 @@ const ids = sortedChannelIds();
 for(const id of ids){
 
 const isOn = !!statusCache[id]?.active;
-const current = statusCache[id]?.viewers || 0;
-const total = statusCache[id]?.total || 0;
+const uptimeSeconds = statusCache[id]?.uptimeSeconds || 0;
+const totalSeconds = statusCache[id]?.totalSeconds || 0;
+const bitrateKbps = statusCache[id]?.bitrateKbps;
 const ch = channelsCache[id];
 const logoUrl = ch.logo || "";
 const category = ch.category || "";
@@ -1435,13 +1436,18 @@ box.innerHTML += \`
 
 <div class="readoutRow">
 <div class="readoutBox">
-<div class="rLbl">الحالي</div>
-<div class="rVal">\${current}</div>
+<div class="rLbl">مدة البث الحالية</div>
+<div class="rVal">\${isOn ? formatDuration(uptimeSeconds) : '—'}</div>
 </div>
 <div class="readoutBox">
-<div class="rLbl">الإجمالي</div>
-<div class="rVal">\${total}</div>
+<div class="rLbl">إجمالي وقت البث</div>
+<div class="rVal">\${formatDuration(totalSeconds)}</div>
 </div>
+</div>
+
+<div class="techLine">
+<div class="tLbl">BITRATE</div>
+<span class="tVal">\${bitrateKbps ? bitrateKbps + ' kbps' : '—'}</span>
 </div>
 
 <div class="techLine">
@@ -1750,10 +1756,14 @@ function broadcast() {
   const data = {};
 
   for (const id in channels) {
+    const active = !!ffmpegProcesses[id];
+    const currentSessionMs = active && liveSince[id] ? (Date.now() - liveSince[id]) : 0;
+
     data[id] = {
-      active: !!ffmpegProcesses[id],
-      viewers: viewers[id] || 0,
-      total: totalViews[id] || 0
+      active,
+      uptimeSeconds: Math.floor(currentSessionMs / 1000),
+      totalSeconds: Math.floor(((totalOnairMs[id] || 0) + currentSessionMs) / 1000),
+      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null
     };
   }
 
