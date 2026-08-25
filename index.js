@@ -32,6 +32,25 @@ let liveSince = {};       // id -> timestamp بداية الجلسة الحال�
 let totalOnairMs = {};    // id -> إجمالي وقت البث التراكمي بالميلي ثانية
 let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من ffmpeg
 
+// ======================
+// 👁️ مشاهدين حقيقيين (مبنيين على طلبات فعلية وصلت لسيرفرنا عن طريق /watch/:id)
+// ======================
+let currentViewerLog = {}; // id -> Map(ip -> آخر وقت طلب)
+let totalViewerSet = {};   // id -> Set(كل الـ IPs اللي طلبت أي وقت)
+const VIEWER_WINDOW_MS = 20000; // أي IP ماطلبش خلال آخر 20 ثانية بيتشال من "الحالي"
+
+// تنظيف دوري لقائمة المشاهدين الحاليين
+setInterval(() => {
+  const now = Date.now();
+  for (const id in currentViewerLog) {
+    for (const [ip, lastSeen] of currentViewerLog[id]) {
+      if (now - lastSeen > VIEWER_WINDOW_MS) {
+        currentViewerLog[id].delete(ip);
+      }
+    }
+  }
+}, 5000);
+
 // عملاء الـ WebSocket المتصلين بالداشبورد
 let clients = [];
 
@@ -65,73 +84,85 @@ const channels = {
     input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
     output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0",
     logo: "logo4kh.png",
-    category: ""
+    category: "",
+    watchUrl: ""
   },
   ch1: {
     input: "https://163.ostv.info/krikar/krikar/652333?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
     output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm",
     logo: "logo1.png",
-    category: "رياضة"
+    category: "رياضة",
+    watchUrl: "https://super-livetv.vercel.app/SUPERTV_1.m3u8"
   },
   ch2: {
     input: "https://163.ostv.info/krikar/krikar/652334?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
     output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy",
     logo: "logo22.png",
-    category: "رياضة"
+    category: "رياضة",
+    watchUrl: ""
   },
   ch3: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
     output: "rtmp://msk.goodgame.ru:1940/live/221746?pwd=5dfed73aa7930d86",
     logo: "logo33.png",
-    category: "رياضة"
+    category: "رياضة",
+    watchUrl: ""
   },
   ch4: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
     output: "rtmp://fr.pscp.tv:80/x/ivphyvtww7k3",
     logo: "logo44.png",
-    category: "رياضة"
+    category: "رياضة",
+    watchUrl: ""
   },
   ch5: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/14863707479574_16379956300310_uoslkp4xrm",
     logo: "logo55.png",
-    category: ""
+    category: "",
+    watchUrl: ""
   },
   ch6: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
     output: "rtmp://vsu.okcdn.ru/input/14901168119318_16447213341206_ssfncxg2zu",
     logo: "logo66.png",
-    category: ""
+    category: "",
+    watchUrl: ""
   },
   ch7: {
     input: "https://stream.camcloud.stream/stream/97e7e9e05d4e/playlist.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/13415538433558_13690939181590_flxfen3y2u",
     logo: "quran.png",
-    category: "دينية"
+    category: "دينية",
+    watchUrl: ""
   },
   ch8: {
     input: "https://man1ted.com/watch/beemax1.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/9978322492950_8842256321046_oxg7ed4dcm",
     logo: "aflam.png",
-    category: "أفلام"
+    category: "أفلام",
+    watchUrl: ""
   },
   ch9: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/13418102398486_13695919458838_h7ihlwq5ca",
     logo: "mosalsalat.png",
-    category: "مسلسلات"
+    category: "مسلسلات",
+    watchUrl: ""
   },
   ch10: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/14994479390230_16613027809814_7sovqbfsba",
     logo: "animy.png",
-    category: "أنمي"
+    category: "أنمي",
+    watchUrl: ""
   },
   ch11: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
     output: "rtmp://vsu.okcdn.ru/input/14994482273814_16613032593942_cmf7uzoh2q",
     logo: "kids.png",
-    category: "أطفال"
+    category: "أطفال",
+    watchUrl: ""
   }
 };
 
@@ -331,6 +362,56 @@ app.get("/logs/:id", (req, res) => {
   res.json(ffmpegLogs[id] || []);
 });
 
+// ======================
+// 👁️ رابط المشاهدة الحقيقي (بروكسي + عداد حقيقي)
+// كل طلب بيعدي من هنا بيتسجل كمشاهد حقيقي
+// ======================
+app.get("/watch/:id", async (req, res) => {
+  const id = req.params.id;
+  const ch = channels[id];
+
+  if (!ch || !ch.watchUrl) {
+    return res.status(404).send("لا يوجد رابط مشاهدة لهذه القناة");
+  }
+
+  // تسجيل المشاهد (IP الطالب) كمشاهد حقيقي حالي وإجمالي
+  const ip = req.ip || req.connection.remoteAddress || "unknown";
+
+  if (!currentViewerLog[id]) currentViewerLog[id] = new Map();
+  currentViewerLog[id].set(ip, Date.now());
+
+  if (!totalViewerSet[id]) totalViewerSet[id] = new Set();
+  totalViewerSet[id].add(ip);
+
+  try {
+    const upstream = await fetch(ch.watchUrl);
+
+    if (!upstream.ok) {
+      return res.status(502).send("تعذر الوصول لرابط المشاهدة الأصلي");
+    }
+
+    const text = await upstream.text();
+
+    // إعادة كتابة أي أسطر نسبية (segments) عشان تفضل شغالة برضو بعد المرور من عندنا
+    const rewritten = text.split("\n").map(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return line;
+      try {
+        return new URL(trimmed, ch.watchUrl).href;
+      } catch (e) {
+        return line;
+      }
+    }).join("\n");
+
+    res.set("Content-Type", "application/vnd.apple.mpegurl");
+    res.send(rewritten);
+
+  } catch (err) {
+    console.log("🔥 /watch proxy error:", err.message);
+    res.status(502).send("تعذر جلب رابط المشاهدة");
+  }
+});
+
 app.get("/status", (req, res) => {
   const result = {};
 
@@ -342,7 +423,9 @@ app.get("/status", (req, res) => {
       active,
       uptimeSeconds: Math.floor(currentSessionMs / 1000),
       totalSeconds: Math.floor(((totalOnairMs[id] || 0) + currentSessionMs) / 1000),
-      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null
+      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null,
+      currentViewers: currentViewerLog[id] ? currentViewerLog[id].size : 0,
+      totalViewers: totalViewerSet[id] ? totalViewerSet[id].size : 0
     };
   }
 
@@ -354,7 +437,7 @@ app.get("/channels", (req, res) => {
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category } = req.body;
+  const { id, input, output, logo, category, watchUrl } = req.body;
 
   if (!id || !input || !output)
     return res.status(400).json({ ok: false });
@@ -363,7 +446,8 @@ app.post("/channel", (req, res) => {
     input,
     output,
     logo: logo || "",
-    category: category || ""
+    category: category || "",
+    watchUrl: watchUrl || ""
   };
 
   res.json({ ok: true });
@@ -380,7 +464,8 @@ app.put("/channel/:id", (req, res) => {
     input: req.body.input ?? channels[id].input,
     output: req.body.output ?? channels[id].output,
     logo: req.body.logo ?? channels[id].logo,
-    category: req.body.category ?? channels[id].category
+    category: req.body.category ?? channels[id].category,
+    watchUrl: req.body.watchUrl ?? channels[id].watchUrl
   };
 
   res.json({ ok: true });
@@ -1158,6 +1243,10 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_category" placeholder="أفلام، رياضة، أطفال...">
 <div class="hint">اختياري — بيستخدم في الفلترة أعلى القائمة</div>
 
+<label>رابط المشاهدة الأصلي (m3u8)</label>
+<input id="f_watchUrl" placeholder="https://.../stream.m3u8">
+<div class="hint">اختياري — لو ضفته، السيرفر يعد المشاهدين الحقيقيين اللي بيدخلوا</div>
+
 <button class="submit" onclick="addChannel()">إضافة القناة</button>
 
 </div>
@@ -1213,6 +1302,15 @@ editDraft[id][field] = val;
 
 function imgFallback(el){
 el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
+}
+
+function copyWatchLink(id){
+const link = window.location.origin + "/watch/" + id;
+navigator.clipboard?.writeText(link).then(()=>{
+alert("تم نسخ رابط المشاهدة:\\n" + link);
+}).catch(()=>{
+prompt("انسخ الرابط يدويًا:", link);
+});
 }
 
 function updateClock(){
@@ -1389,6 +1487,8 @@ const isOn = !!statusCache[id]?.active;
 const uptimeSeconds = statusCache[id]?.uptimeSeconds || 0;
 const totalSeconds = statusCache[id]?.totalSeconds || 0;
 const bitrateKbps = statusCache[id]?.bitrateKbps;
+const currentViewers = statusCache[id]?.currentViewers || 0;
+const totalViewers = statusCache[id]?.totalViewers || 0;
 const ch = channelsCache[id];
 const logoUrl = ch.logo || "";
 const category = ch.category || "";
@@ -1427,6 +1527,11 @@ box.innerHTML += \`
 <input value="\${(editDraft[id]?.category ?? ch.category ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','category',this.value)">
 </div>
 
+<div class="editField">
+<div class="tLbl">رابط المشاهدة الأصلي (WATCH URL)</div>
+<input value="\${(editDraft[id]?.watchUrl ?? ch.watchUrl ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','watchUrl',this.value)">
+</div>
+
 <div class="editActions">
 <button class="saveBtn" onclick="saveEdit('\${id}')">حفظ</button>
 <button class="cancelBtn" onclick="cancelEdit()">إلغاء</button>
@@ -1436,13 +1541,29 @@ box.innerHTML += \`
 
 <div class="readoutRow">
 <div class="readoutBox">
-<div class="rLbl">مدة البث الحالية</div>
-<div class="rVal">\${isOn ? formatDuration(uptimeSeconds) : '—'}</div>
+<div class="rLbl">مشاهدين الآن</div>
+<div class="rVal">\${ch.watchUrl ? currentViewers : '—'}</div>
 </div>
 <div class="readoutBox">
-<div class="rLbl">إجمالي وقت البث</div>
-<div class="rVal">\${formatDuration(totalSeconds)}</div>
+<div class="rLbl">إجمالي المشاهدين</div>
+<div class="rVal">\${ch.watchUrl ? totalViewers : '—'}</div>
 </div>
+</div>
+
+\${ ch.watchUrl ? \`
+<div class="techLine">
+<div class="tLbl">رابط المشاهدة (شارك ده مع الجمهور)</div>
+<span class="tVal" style="color:var(--accent);cursor:pointer" title="اضغط للنسخ" onclick="copyWatchLink('\${id}')">\${window.location.origin}/watch/\${id}</span>
+</div>
+\` : \`
+<div class="techLine">
+<span class="tVal" style="color:var(--text-3)">مفيش رابط مشاهدة مضاف — اضغط تعديل لإضافته</span>
+</div>
+\` }
+
+<div class="techLine">
+<div class="tLbl">مدة البث الحالية · إجمالي وقت البث</div>
+<span class="tVal">\${isOn ? formatDuration(uptimeSeconds) : '—'} · \${formatDuration(totalSeconds)}</span>
 </div>
 
 <div class="techLine">
@@ -1643,6 +1764,7 @@ const input = document.getElementById("f_input").value.trim();
 const output = document.getElementById("f_output").value.trim();
 const logo = document.getElementById("f_logo").value.trim();
 const category = document.getElementById("f_category").value.trim();
+const watchUrl = document.getElementById("f_watchUrl").value.trim();
 
 if(!id || !input || !output){
 alert("من فضلك املأ معرف القناة، رابط البث، ورابط الإخراج على الأقل");
@@ -1652,7 +1774,7 @@ return;
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category })
+body:JSON.stringify({ id, input, output, logo, category, watchUrl })
 });
 
 document.getElementById("f_id").value = "";
@@ -1660,6 +1782,7 @@ document.getElementById("f_input").value = "";
 document.getElementById("f_output").value = "";
 document.getElementById("f_logo").value = "";
 document.getElementById("f_category").value = "";
+document.getElementById("f_watchUrl").value = "";
 
 load();
 show("channels");
@@ -1692,7 +1815,8 @@ body:JSON.stringify({
 input: draft.input ?? channelsCache[id].input,
 output: draft.output ?? channelsCache[id].output,
 logo: draft.logo ?? "",
-category: draft.category ?? ""
+category: draft.category ?? "",
+watchUrl: draft.watchUrl ?? ""
 })
 });
 
@@ -1763,7 +1887,9 @@ function broadcast() {
       active,
       uptimeSeconds: Math.floor(currentSessionMs / 1000),
       totalSeconds: Math.floor(((totalOnairMs[id] || 0) + currentSessionMs) / 1000),
-      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null
+      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null,
+      currentViewers: currentViewerLog[id] ? currentViewerLog[id].size : 0,
+      totalViewers: totalViewerSet[id] ? totalViewerSet[id].size : 0
     };
   }
 
