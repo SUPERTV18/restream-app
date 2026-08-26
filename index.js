@@ -1799,7 +1799,8 @@ editDraft[id] = {
 input: channelsCache[id].input || "",
 output: channelsCache[id].output || "",
 logo: channelsCache[id].logo || "",
-category: channelsCache[id].category || ""
+category: channelsCache[id].category || "",
+watchUrl: channelsCache[id].watchUrl || ""
 };
 editingId = id;
 render();
