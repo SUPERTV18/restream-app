@@ -366,7 +366,7 @@ app.get("/logs/:id", (req, res) => {
 // 👁️ رابط المشاهدة الحقيقي (بروكسي + عداد حقيقي)
 // كل طلب بيعدي من هنا بيتسجل كمشاهد حقيقي
 // ======================
-app.get("/watch/:id", async (req, res) => {
+async function handleWatchRequest(req, res) {
   const id = req.params.id;
   const ch = channels[id];
 
@@ -410,7 +410,12 @@ app.get("/watch/:id", async (req, res) => {
     console.log("🔥 /watch proxy error:", err.message);
     res.status(502).send("تعذر جلب رابط المشاهدة");
   }
-});
+}
+
+// نفس المسار بصيغتين: بدون امتداد، وبامتداد .m3u8 (بعض مشغلات IPTV محتاجة الامتداد صراحة)
+// لازم مسار .m3u8 يتسجل الأول، عشان مسار :id العادي بيقبل أي حروف (حتى النقطة) ويلقطه الأول لو اتسجل قبله
+app.get("/watch/:id.m3u8", handleWatchRequest);
+app.get("/watch/:id", handleWatchRequest);
 
 app.get("/status", (req, res) => {
   const result = {};
@@ -1305,7 +1310,7 @@ el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
 }
 
 function copyWatchLink(id){
-const link = window.location.origin + "/watch/" + id;
+const link = window.location.origin + "/watch/" + id + ".m3u8";
 navigator.clipboard?.writeText(link).then(()=>{
 alert("تم نسخ رابط المشاهدة:\\n" + link);
 }).catch(()=>{
@@ -1553,7 +1558,7 @@ box.innerHTML += \`
 \${ ch.watchUrl ? \`
 <div class="techLine">
 <div class="tLbl">رابط المشاهدة (شارك ده مع الجمهور)</div>
-<span class="tVal" style="color:var(--accent);cursor:pointer" title="اضغط للنسخ" onclick="copyWatchLink('\${id}')">\${window.location.origin}/watch/\${id}</span>
+<span class="tVal" style="color:var(--accent);cursor:pointer" title="اضغط للنسخ" onclick="copyWatchLink('\${id}')">\${window.location.origin}/watch/\${id}.m3u8</span>
 </div>
 \` : \`
 <div class="techLine">
