@@ -1,6 +1,7 @@
 import express from "express";
 import { spawn } from "child_process";
 import { WebSocketServer } from "ws";
+import ytdl from "@distube/ytdl-core";
 
 const app = express();
 app.use(express.json());
@@ -103,14 +104,14 @@ const channels = {
   },
   ch3: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/15651304709717_17641796995669_ozpan4c55m",
+    output: "rtmp://msk.goodgame.ru:1940/live/221746?pwd=5dfed73aa7930d86",
     logo: "logo33.png",
     category: "رياضة",
     watchUrl: "https://super-tvlive.vercel.app/SUPERTV_3.m3u8"
   },
   ch4: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/15651325025877_17641833499221_yp3cn26lt4",
+    output: "rtmp://fr.pscp.tv:80/x/ivphyvtww7k3",
     logo: "logo44.png",
     category: "رياضة",
     watchUrl: "https://super-tvlive.vercel.app/SUPERTV_4.m3u8"
@@ -130,22 +131,22 @@ const channels = {
     watchUrl: ""
   },
   ch7: {
-    input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
-    output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
-    logo: "quran2.png",
+    input: "https://stream.camcloud.stream/stream/97e7e9e05d4e/playlist.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/13415538433558_13690939181590_flxfen3y2u",
+    logo: "quran.png",
     category: "دينية",
     watchUrl: ""
   },
   ch8: {
-    input: "https://b2.shahidtv.net/files/Movies/hollywood/The-Birthday-Party-2026/The-Birthday-Party-2026-webdl-720p.mp4",
-    output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
+    input: "https://man1ted.com/watch/beemax1.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/9978322492950_8842256321046_oxg7ed4dcm",
     logo: "aflam.png",
     category: "أفلام",
     watchUrl: ""
   },
   ch9: {
-    input: "https://b2.shahidtv.net/files/US/The-Last-Thing-He-Told-Me/The-Last-Thing-He-Told-Me-S01-EP001-720p.mp4",
-    output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
+    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/13418102398486_13695919458838_h7ihlwq5ca",
     logo: "mosalsalat.png",
     category: "مسلسلات",
     watchUrl: ""
@@ -159,7 +160,7 @@ const channels = {
   },
   ch11: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
+    output: "rtmp://vsu.okcdn.ru/input/14994482273814_16613032593942_cmf7uzoh2q",
     logo: "kids.png",
     category: "أطفال",
     watchUrl: ""
@@ -192,6 +193,34 @@ function getLogo(id) {
 }
 
 // ======================
+// ▶️ يوتيوب: استخراج رابط HLS الحقيقي من رابط بث مباشر على يوتيوب
+// ======================
+function isYoutubeUrl(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return host === "youtube.com" || host === "youtu.be" || host === "m.youtube.com";
+  } catch (e) {
+    return false;
+  }
+}
+
+async function resolveInputUrl(id, rawInput) {
+  if (!isYoutubeUrl(rawInput)) return rawInput;
+
+  console.log(`[${id}] 🔎 جاري استخراج رابط البث المباشر من يوتيوب...`);
+
+  const info = await ytdl.getInfo(rawInput);
+  const hlsUrl = info.player_response?.streamingData?.hlsManifestUrl;
+
+  if (!hlsUrl) {
+    throw new Error("الفيديو ده مش بث مباشر شغال دلوقتي، أو مفيش رابط HLS متاح");
+  }
+
+  console.log(`[${id}] ✅ تم استخراج رابط يوتيوب بنجاح`);
+  return hlsUrl;
+}
+
+// ======================
 // 🛡️ SAFETY
 // ======================
 process.on("uncaughtException", (err) => {
@@ -205,11 +234,24 @@ process.on("unhandledRejection", (err) => {
 // ======================
 // 🎬 START STREAM
 // ======================
-function spawnStream(id) {
+async function spawnStream(id) {
   if (ffmpegProcesses[id]) return;
 
   const ch = channels[id];
   if (!ch) return;
+
+  // نستخرج الرابط الفعلي (لو رابط يوتيوب، بنحوله لرابط HLS حقيقي)
+  let resolvedInput;
+  try {
+    resolvedInput = await resolveInputUrl(id, ch.input);
+  } catch (err) {
+    console.log(`[${id}] 🔥 فشل استخراج رابط البث:`, err.message);
+    logEvent(id, "exit", "تعذر تشغيل القناة: " + err.message);
+    return;
+  }
+
+  // لو القناة اتقفلت أو اتشغلت من مكان تاني أثناء ما كنا بنستخرج الرابط
+  if (ffmpegProcesses[id]) return;
 
   console.log("▶ START:", id);
   logEvent(id, "start", "تم تشغيل القناة");
@@ -229,7 +271,7 @@ function spawnStream(id) {
     "-reconnect_streamed", "1",
     "-reconnect_delay_max", "5",
 
-    "-i", ch.input,
+    "-i", resolvedInput,
     "-i", getLogo(id),
 
     "-filter_complex",
@@ -1236,6 +1278,7 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 
 <label>رابط البث (Input URL)</label>
 <input id="f_input" placeholder="rtmp:// or http://...">
+<div class="hint">تقدر تحط رابط بث مباشر على يوتيوب مباشرة (youtube.com/watch?v=... أو youtube.com/live/...) والسيرفر يستخرج رابط البث الحقيقي منه تلقائي</div>
 
 <label>رابط الإخراج (RTMP Output)</label>
 <input id="f_output" placeholder="rtmp://...">
