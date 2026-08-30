@@ -137,14 +137,14 @@ const channels = {
     watchUrl: ""
   },
   ch8: {
-    input: "https://man1ted.com/watch/beemax1.m3u8",
+    input: "https://b2.shahidtv.net/files/Movies/hollywood/The-Birthday-Party-2026/The-Birthday-Party-2026-webdl-720p.mp4",
     output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
     logo: "aflam.png",
     category: "أفلام",
     watchUrl: ""
   },
   ch9: {
-    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
+    input: "https://b2.shahidtv.net/files/US/The-Last-Thing-He-Told-Me/The-Last-Thing-He-Told-Me-S01-EP001-720p.mp4",
     output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
     logo: "mosalsalat.png",
     category: "مسلسلات",
