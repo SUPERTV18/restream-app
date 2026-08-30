@@ -130,9 +130,9 @@ const channels = {
     watchUrl: ""
   },
   ch7: {
-    input: "https://es.egys.gs/live/abdoyasser112/01032783778/1011.m3u8",
+    input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
-    logo: "quran.png",
+    logo: "quran1.png",
     category: "دينية",
     watchUrl: ""
   },
