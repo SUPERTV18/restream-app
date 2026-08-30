@@ -130,7 +130,7 @@ const channels = {
     watchUrl: ""
   },
   ch7: {
-    input: "https://stream.camcloud.stream/stream/97e7e9e05d4e/playlist.m3u8",
+    input: "https://es.egys.gs/live/abdoyasser112/01032783778/1011.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
     logo: "quran.png",
     category: "دينية",
