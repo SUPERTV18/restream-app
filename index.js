@@ -132,7 +132,7 @@ const channels = {
   ch7: {
     input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
-    logo: "quran1.png",
+    logo: "quran2.png",
     category: "دينية",
     watchUrl: ""
   },
