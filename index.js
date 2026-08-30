@@ -1,7 +1,18 @@
 import express from "express";
 import { spawn } from "child_process";
 import { WebSocketServer } from "ws";
-import ytdl from "@distube/ytdl-core";
+
+// ======================
+// 🩹 توافق مع Node 18: بعض المكتبات (زي undici اللي بيستخدمها ytdl-core)
+// بتفترض وجود File كـ global، وده متوفر افتراضيًا بس من Node 20.
+// نضيفه يدويًا هنا قبل ما نحمّل المكتبة عشان تشتغل صح على Node 18 كمان
+// ======================
+if (typeof globalThis.File === "undefined") {
+  const { File } = await import("node:buffer");
+  globalThis.File = File;
+}
+
+const ytdl = (await import("@distube/ytdl-core")).default;
 
 const app = express();
 app.use(express.json());
