@@ -113,14 +113,14 @@ const channels = {
   },
   ch3: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://msk.goodgame.ru:1940/live/221746?pwd=5dfed73aa7930d86",
+    output: "rtmp://vsu.okcdn.ru/input/15651304709717_17641796995669_ozpan4c55m",
     logo: "logo33.png",
     category: "رياضة",
     watchUrl: "https://super-tvlive.vercel.app/SUPERTV_3.m3u8"
   },
   ch4: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
-    output: "rtmp://fr.pscp.tv:80/x/ivphyvtww7k3",
+    output: "rtmp://vsu.okcdn.ru/input/15651325025877_17641833499221_yp3cn26lt4",
     logo: "logo44.png",
     category: "رياضة",
     watchUrl: "https://super-tvlive.vercel.app/SUPERTV_4.m3u8"
@@ -140,22 +140,22 @@ const channels = {
     watchUrl: ""
   },
   ch7: {
-    input: "https://stream.camcloud.stream/stream/97e7e9e05d4e/playlist.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/13415538433558_13690939181590_flxfen3y2u",
-    logo: "quran.png",
+    input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
+    output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
+    logo: "quran2.png",
     category: "دينية",
     watchUrl: ""
   },
   ch8: {
-    input: "https://man1ted.com/watch/beemax1.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/9978322492950_8842256321046_oxg7ed4dcm",
+    input: "https://b2.shahidtv.net/files/Movies/hollywood/The-Birthday-Party-2026/The-Birthday-Party-2026-webdl-720p.mp4",
+    output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
     logo: "aflam.png",
     category: "أفلام",
     watchUrl: ""
   },
   ch9: {
-    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255226.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/13418102398486_13695919458838_h7ihlwq5ca",
+    input: "https://b2.shahidtv.net/files/US/The-Last-Thing-He-Told-Me/The-Last-Thing-He-Told-Me-S01-EP001-720p.mp4",
+    output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
     logo: "mosalsalat.png",
     category: "مسلسلات",
     watchUrl: ""
@@ -169,7 +169,7 @@ const channels = {
   },
   ch11: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/14994482273814_16613032593942_cmf7uzoh2q",
+    output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
     logo: "kids.png",
     category: "أطفال",
     watchUrl: ""
