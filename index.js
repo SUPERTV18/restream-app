@@ -168,7 +168,7 @@ const channels = {
     watchUrl: ""
   },
   ch11: {
-    input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
+    input: "https://blc2cr.linkip.org/live/90068_.m3u8?play",
     output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
     logo: "kids.png",
     category: "أطفال",
