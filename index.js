@@ -1,18 +1,9 @@
 import express from "express";
-import { spawn } from "child_process";
+import { spawn, execFile } from "child_process";
+import { promisify } from "util";
 import { WebSocketServer } from "ws";
 
-// ======================
-// 🩹 توافق مع Node 18: بعض المكتبات (زي undici اللي بيستخدمها ytdl-core)
-// بتفترض وجود File كـ global، وده متوفر افتراضيًا بس من Node 20.
-// نضيفه يدويًا هنا قبل ما نحمّل المكتبة عشان تشتغل صح على Node 18 كمان
-// ======================
-if (typeof globalThis.File === "undefined") {
-  const { File } = await import("node:buffer");
-  globalThis.File = File;
-}
-
-const ytdl = (await import("@distube/ytdl-core")).default;
+const execFileAsync = promisify(execFile);
 
 const app = express();
 app.use(express.json());
@@ -92,6 +83,13 @@ function logEvent(id, type, message) {
 // كل قناة ممكن يكون ليها: input, output, logo (رابط صورة), category (تصنيف)
 // ======================
 const channels = {
+  chyt1: {
+    input: "https://www.youtube.com/live/7DHNbnPMNiM?si=Ypmmu60JMR9OtlNa",
+    output: "",
+    logo: "",
+    category: "",
+    watchUrl: ""
+  },
   ch4k: {
     input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
     output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0",
@@ -218,17 +216,29 @@ function isYoutubeUrl(url) {
 async function resolveInputUrl(id, rawInput) {
   if (!isYoutubeUrl(rawInput)) return rawInput;
 
-  console.log(`[${id}] 🔎 جاري استخراج رابط البث المباشر من يوتيوب...`);
+  console.log(`[${id}] 🔎 جاري استخراج رابط البث المباشر من يوتيوب (yt-dlp)...`);
 
-  const info = await ytdl.getInfo(rawInput);
-  const hlsUrl = info.player_response?.streamingData?.hlsManifestUrl;
-
-  if (!hlsUrl) {
-    throw new Error("الفيديو ده مش بث مباشر شغال دلوقتي، أو مفيش رابط HLS متاح");
+  let stdout;
+  try {
+    const result = await execFileAsync(
+      "yt-dlp",
+      ["-g", "--no-warnings", rawInput],
+      { timeout: 25000 }
+    );
+    stdout = result.stdout;
+  } catch (err) {
+    const detail = (err.stderr || err.message || "").toString().split("\n")[0];
+    throw new Error("فشل استخراج رابط يوتيوب: " + detail);
   }
 
-  console.log(`[${id}] ✅ تم استخراج رابط يوتيوب بنجاح`);
-  return hlsUrl;
+  const lines = stdout.trim().split("\n").map(l => l.trim()).filter(Boolean);
+
+  if (lines.length === 0) {
+    throw new Error("لم يتم العثور على رابط بث — تأكد إن الفيديو ده بث مباشر شغال فعليًا دلوقتي");
+  }
+
+  console.log(`[${id}] ✅ تم استخراج رابط يوتيوب بنجاح عن طريق yt-dlp`);
+  return lines[0];
 }
 
 // ======================
