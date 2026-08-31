@@ -221,8 +221,8 @@ async function resolveInputUrl(id, rawInput) {
   let stdout;
   try {
     const result = await execFileAsync(
-      "yt-dlp",
-      ["-g", "--no-warnings", rawInput],
+      "python3",
+      ["-m", "yt_dlp", "-g", "--no-warnings", rawInput],
       { timeout: 25000 }
     );
     stdout = result.stdout;
