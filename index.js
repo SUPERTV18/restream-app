@@ -147,9 +147,9 @@ const channels = {
     watchUrl: ""
   },
   ch8: {
-    input: "https://b2.shahidtv.net/files/Movies/hollywood/The-Birthday-Party-2026/The-Birthday-Party-2026-webdl-720p.mp4",
+    input: "https://blc2cr.linkip.org/live/90055_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
-    logo: "aflam.png",
+    logo: "aflam2.png",
     category: "أفلام",
     watchUrl: ""
   },
