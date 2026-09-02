@@ -4,7 +4,7 @@ import { promisify } from "util";
 import { WebSocketServer } from "ws";
 
 const execFileAsync = promisify(execFile);
- 
+
 const app = express();
 app.use(express.json());
 
@@ -204,6 +204,46 @@ function getLogo(id) {
 // ======================
 // ▶️ يوتيوب: استخراج رابط HLS الحقيقي من رابط بث مباشر على يوتيوب
 // ======================
+// ======================
+// 🎚️ مستويات الجودة (لتقليل حمل المعالج على القنوات الأقل أهمية)
+// ======================
+const QUALITY_PRESETS = {
+  high: {
+    scale: "1920:1080",
+    bitrate: "5000k",
+    maxrate: "5500k",
+    bufsize: "10000k",
+    preset: "veryfast",
+    profile: "high",
+    level: "4.1",
+    fps: "25"
+  },
+  medium: {
+    scale: "1280:720",
+    bitrate: "2500k",
+    maxrate: "2800k",
+    bufsize: "5000k",
+    preset: "veryfast",
+    profile: "main",
+    level: "3.1",
+    fps: "25"
+  },
+  low: {
+    scale: "854:480",
+    bitrate: "1200k",
+    maxrate: "1400k",
+    bufsize: "2400k",
+    preset: "ultrafast",
+    profile: "baseline",
+    level: "3.0",
+    fps: "20"
+  }
+};
+
+function getQualityPreset(ch) {
+  return QUALITY_PRESETS[ch?.quality] || QUALITY_PRESETS.high;
+}
+
 function isYoutubeUrl(url) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, "");
@@ -285,6 +325,8 @@ async function spawnStream(id) {
   if (totalOnairMs[id] == null) totalOnairMs[id] = 0;
   lastBitrateKbps[id] = null;
 
+  const q = getQualityPreset(ch);
+
   const ffmpeg = spawn("ffmpeg", [
     "-re",
 
@@ -296,22 +338,22 @@ async function spawnStream(id) {
     "-i", getLogo(id),
 
     "-filter_complex",
-    "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[base];[1:v]scale=-1:3000[logo];[base][logo]overlay=W-w-2:2",
+    `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[base];[1:v]scale=-1:3000[logo];[base][logo]overlay=W-w-2:2`,
 
     "-c:v", "libx264",
-"-preset", "veryfast",
+"-preset", q.preset,
 "-tune", "zerolatency",
 
 "-pix_fmt", "yuv420p",
 
-"-profile:v", "high",
-"-level", "4.1",
+"-profile:v", q.profile,
+"-level", q.level,
 
-"-b:v", "5000k",
-"-maxrate", "5500k",
-"-bufsize", "10000k",
+"-b:v", q.bitrate,
+"-maxrate", q.maxrate,
+"-bufsize", q.bufsize,
 
-"-r", "25",
+"-r", q.fps,
 "-g", "50",
 
     "-c:a", "aac",
@@ -505,7 +547,7 @@ app.get("/channels", (req, res) => {
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category, watchUrl } = req.body;
+  const { id, input, output, logo, category, watchUrl, quality } = req.body;
 
   if (!id || !input || !output)
     return res.status(400).json({ ok: false });
@@ -515,7 +557,8 @@ app.post("/channel", (req, res) => {
     output,
     logo: logo || "",
     category: category || "",
-    watchUrl: watchUrl || ""
+    watchUrl: watchUrl || "",
+    quality: QUALITY_PRESETS[quality] ? quality : "high"
   };
 
   res.json({ ok: true });
@@ -533,7 +576,8 @@ app.put("/channel/:id", (req, res) => {
     output: req.body.output ?? channels[id].output,
     logo: req.body.logo ?? channels[id].logo,
     category: req.body.category ?? channels[id].category,
-    watchUrl: req.body.watchUrl ?? channels[id].watchUrl
+    watchUrl: req.body.watchUrl ?? channels[id].watchUrl,
+    quality: QUALITY_PRESETS[req.body.quality] ? req.body.quality : (channels[id].quality || "high")
   };
 
   res.json({ ok: true });
@@ -1032,7 +1076,7 @@ font-weight:500;
 
 .formCard label:first-of-type{ margin-top:0; }
 
-.formCard input{
+.formCard input, .formCard select{
 width:100%;
 padding:10px 13px;
 border-radius:var(--radius);
@@ -1316,6 +1360,14 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_watchUrl" placeholder="https://.../stream.m3u8">
 <div class="hint">اختياري — لو ضفته، السيرفر يعد المشاهدين الحقيقيين اللي بيدخلوا</div>
 
+<label>جودة البث (Quality)</label>
+<select id="f_quality">
+<option value="high">عالية — 1080p (أعلى حمل على المعالج)</option>
+<option value="medium">متوسطة — 720p</option>
+<option value="low">منخفضة — 480p (أخف حمل، مناسب لتشغيل قنوات كتير مع بعض)</option>
+</select>
+<div class="hint">قلل الجودة للقنوات الأقل أهمية عشان تقدر تشغّل قنوات أكتر مع بعض من غير ما السيرفر يقف</div>
+
 <button class="submit" onclick="addChannel()">إضافة القناة</button>
 
 </div>
@@ -1561,6 +1613,7 @@ const totalViewers = statusCache[id]?.totalViewers || 0;
 const ch = channelsCache[id];
 const logoUrl = ch.logo || "";
 const category = ch.category || "";
+const qualityLabel = { high: "1080p", medium: "720p", low: "480p" }[ch.quality] || "1080p";
 
 box.innerHTML += \`
 <div class="card">
@@ -1570,6 +1623,7 @@ box.innerHTML += \`
 <div class="titleWrap">
 <h3>\${id}</h3>
 \${category ? '<span class="catTag">'+category+'</span>' : ''}
+<span class="catTag mono" style="margin-right:6px">\${qualityLabel}</span>
 </div>
 <div class="statusPill \${isOn ? 'on' : 'off'}"><i class="ti ti-point-filled"></i>\${isOn ? 'شغالة' : 'متوقفة'}</div>
 </div>
@@ -1599,6 +1653,15 @@ box.innerHTML += \`
 <div class="editField">
 <div class="tLbl">رابط المشاهدة الأصلي (WATCH URL)</div>
 <input value="\${(editDraft[id]?.watchUrl ?? ch.watchUrl ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','watchUrl',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">جودة البث (QUALITY)</div>
+<select onchange="updateDraft('\${id}','quality',this.value)">
+<option value="high" \${(editDraft[id]?.quality ?? ch.quality ?? 'high') === 'high' ? 'selected' : ''}>عالية — 1080p</option>
+<option value="medium" \${(editDraft[id]?.quality ?? ch.quality) === 'medium' ? 'selected' : ''}>متوسطة — 720p</option>
+<option value="low" \${(editDraft[id]?.quality ?? ch.quality) === 'low' ? 'selected' : ''}>منخفضة — 480p</option>
+</select>
 </div>
 
 <div class="editActions">
@@ -1834,6 +1897,7 @@ const output = document.getElementById("f_output").value.trim();
 const logo = document.getElementById("f_logo").value.trim();
 const category = document.getElementById("f_category").value.trim();
 const watchUrl = document.getElementById("f_watchUrl").value.trim();
+const quality = document.getElementById("f_quality").value;
 
 if(!id || !input || !output){
 alert("من فضلك املأ معرف القناة، رابط البث، ورابط الإخراج على الأقل");
@@ -1843,7 +1907,7 @@ return;
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category, watchUrl })
+body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality })
 });
 
 document.getElementById("f_id").value = "";
@@ -1852,6 +1916,7 @@ document.getElementById("f_output").value = "";
 document.getElementById("f_logo").value = "";
 document.getElementById("f_category").value = "";
 document.getElementById("f_watchUrl").value = "";
+document.getElementById("f_quality").value = "high";
 
 load();
 show("channels");
@@ -1886,7 +1951,8 @@ input: draft.input ?? channelsCache[id].input,
 output: draft.output ?? channelsCache[id].output,
 logo: draft.logo ?? "",
 category: draft.category ?? "",
-watchUrl: draft.watchUrl ?? ""
+watchUrl: draft.watchUrl ?? "",
+quality: draft.quality ?? channelsCache[id].quality ?? "high"
 })
 });
 
