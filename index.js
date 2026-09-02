@@ -142,21 +142,21 @@ const channels = {
   ch7: {
     input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
-    logo: "quran2.png",
+    logo: "quran3.png",
     category: "دينية",
     watchUrl: ""
   },
   ch8: {
     input: "https://blc2cr.linkip.org/live/90055_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
-    logo: "aflam2.png",
+    logo: "aflam3.png",
     category: "أفلام",
     watchUrl: ""
   },
   ch9: {
-    input: "https://b2.shahidtv.net/files/US/The-Last-Thing-He-Told-Me/The-Last-Thing-He-Told-Me-S01-EP001-720p.mp4",
+    input: "https://blc2cr.linkip.org/live/90131_.m3u8?play",
     output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
-    logo: "mosalsalat.png",
+    logo: "mosalsalat2.png",
     category: "مسلسلات",
     watchUrl: ""
   },
@@ -170,7 +170,7 @@ const channels = {
   ch11: {
     input: "https://blc2cr.linkip.org/live/90068_.m3u8?play",
     output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
-    logo: "kids.png",
+    logo: "kids3.png",
     category: "أطفال",
     watchUrl: ""
   }
