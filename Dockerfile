@@ -1,6 +1,6 @@
 FROM node:18
 
-# تحديث النظام وتثبيت FFmpeg + Python + pip
+# تثبيت FFmpeg + Python + pip
 RUN apt-get update && \
     apt-get install -y \
     ffmpeg \
@@ -9,7 +9,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # تثبيت yt-dlp
-RUN pip3 install --no-cache-dir -U yt-dlp
+RUN pip3 install --no-cache-dir --break-system-packages -U yt-dlp
 
 WORKDIR /app
 
