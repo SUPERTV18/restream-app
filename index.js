@@ -492,35 +492,63 @@ function getSources(ch) {
 }
 
 // ======================================================
-// ▶️ YOUTUBE
+// 📺 CHECK YOUTUBE URL
 // ======================================================
 
 function isYoutubeUrl(url) {
 
+  if (!url) {
+    return false;
+  }
+
   try {
 
-    const host =
-      new URL(url)
-        .hostname
-        .replace(/^www\./, "");
+    const u = new URL(url);
 
-    return (
+    const host =
+      u.hostname.toLowerCase();
+
+    // YouTube
+    if (
       host === "youtube.com" ||
-      host === "youtu.be" ||
-      host === "m.youtube.com"
-    );
+      host === "www.youtube.com" ||
+      host === "m.youtube.com" ||
+      host === "music.youtube.com"
+    ) {
+
+      return (
+        u.pathname.startsWith("/watch") ||
+        u.pathname.startsWith("/live/") ||
+        u.pathname.startsWith("/shorts/") ||
+        u.pathname.startsWith("/embed/")
+      );
+    }
+
+    // youtu.be
+    if (host === "youtu.be") {
+      return true;
+    }
+
+    return false;
 
   } catch {
 
     return false;
   }
 }
-
 // ======================================================
 // 🔎 RESOLVE INPUT
 // ======================================================
 
 async function resolveInputUrl(id, rawInput) {
+
+  if (!rawInput) {
+    throw new Error("رابط المصدر فارغ");
+  }
+
+  // ----------------------------------------------------
+  // ليس YouTube
+  // ----------------------------------------------------
 
   if (!isYoutubeUrl(rawInput)) {
     return rawInput;
@@ -530,7 +558,12 @@ async function resolveInputUrl(id, rawInput) {
     `[${id}] 🔎 استخراج رابط YouTube...`
   );
 
-  let stdout;
+  console.log(
+    `[${id}] 🔗 YouTube: ${rawInput}`
+  );
+
+  let stdout = "";
+  let stderr = "";
 
   try {
 
@@ -540,51 +573,91 @@ async function resolveInputUrl(id, rawInput) {
         [
           "-m",
           "yt_dlp",
-          "-g",
+
+          // عدم تحميل Playlist
+          "--no-playlist",
+
+          // بدون تحذيرات
           "--no-warnings",
+
+          // نريد رابط واحد قابل للتشغيل
+          "-f",
+          "best[protocol^=https]/best",
+
+          // استخراج الرابط المباشر
+          "-g",
+
           rawInput
         ],
         {
-          timeout: 25000
+          timeout: 30000,
+          maxBuffer: 1024 * 1024
         }
       );
 
-    stdout = result.stdout;
+    stdout =
+      String(result.stdout || "");
+
+    stderr =
+      String(result.stderr || "");
 
   } catch (err) {
 
-    const detail =
-      (
+    const errorText =
+      String(
         err.stderr ||
+        err.stdout ||
         err.message ||
+        stderr ||
         ""
-      )
-      .toString()
-      .split("\n")[0];
+      ).trim();
+
+    console.log(
+      `[${id}] ❌ yt-dlp ERROR:`
+    );
+
+    console.log(
+      errorText
+    );
 
     throw new Error(
       "فشل استخراج رابط يوتيوب: " +
-      detail
+      (
+        errorText ||
+        "خطأ غير معروف"
+      )
     );
   }
+
+  // ----------------------------------------------------
+  // استخراج أول رابط
+  // ----------------------------------------------------
 
   const lines =
     stdout
       .trim()
-      .split("\n")
-      .map(l => l.trim())
+      .split(/\r?\n/)
+      .map(
+        line => line.trim()
+      )
       .filter(Boolean);
 
   if (!lines.length) {
 
     throw new Error(
-      "لم يتم العثور على رابط بث"
+      "yt-dlp لم يرجع رابط بث"
     );
   }
 
-  return lines[0];
-}
+  const directUrl =
+    lines[0];
 
+  console.log(
+    `[${id}] ✅ تم استخراج رابط YouTube`
+  );
+
+  return directUrl;
+}
 // ======================================================
 // 🛡️ SAFETY
 // ======================================================
@@ -814,85 +887,114 @@ async function spawnStream(
     `[base][logo]overlay=W-w-2:2`;
 
   // ----------------------------------------------------
-  // FFmpeg
-  // ----------------------------------------------------
+// 🎬 FFmpeg
+// ----------------------------------------------------
 
-  const ffmpeg =
-    spawn(
-      "ffmpeg",
-      [
+const ffmpeg =
+  spawn(
+    "ffmpeg",
+    [
 
-        "-hide_banner",
+      "-hide_banner",
 
-        "-re",
+      // -----------------------------------------------
+      // 🔄 Reconnect
+      // -----------------------------------------------
 
-        "-reconnect",
-        "1",
+      "-reconnect",
+      "1",
 
-        "-reconnect_streamed",
-        "1",
+      "-reconnect_streamed",
+      "1",
 
-        "-reconnect_delay_max",
-        "5",
+      "-reconnect_delay_max",
+      "5",
 
-        "-i",
-        resolvedInput,
+      // -----------------------------------------------
+      // 📥 INPUT
+      // -----------------------------------------------
 
-        "-i",
-        getLogo(id),
+      "-i",
+      resolvedInput,
 
-        "-filter_complex",
-        filterComplex,
+      // -----------------------------------------------
+      // 🖼️ LOGO
+      // -----------------------------------------------
 
-        "-c:v",
-        "libx264",
+      "-i",
+      getLogo(id),
 
-        "-preset",
-        q.preset,
+      // -----------------------------------------------
+      // 🎨 FILTER
+      // -----------------------------------------------
 
-        "-tune",
-        "zerolatency",
+      "-filter_complex",
+      filterComplex,
 
-        "-pix_fmt",
-        "yuv420p",
+      // -----------------------------------------------
+      // 🎥 VIDEO
+      // -----------------------------------------------
 
-        "-profile:v",
-        q.profile,
+      "-c:v",
+      "libx264",
 
-        "-level",
-        q.level,
+      "-preset",
+      q.preset,
 
-        "-b:v",
-        q.bitrate,
+      "-tune",
+      "zerolatency",
 
-        "-maxrate",
-        q.maxrate,
+      "-pix_fmt",
+      "yuv420p",
 
-        "-bufsize",
-        q.bufsize,
+      "-profile:v",
+      q.profile,
 
-        "-r",
-        q.fps,
+      "-level",
+      q.level,
 
-        "-g",
-        "50",
+      "-b:v",
+      q.bitrate,
 
-        "-c:a",
-        "aac",
+      "-maxrate",
+      q.maxrate,
 
-        "-b:a",
-        "128k",
+      "-bufsize",
+      q.bufsize,
 
-        "-f",
-        "flv",
+      "-r",
+      q.fps,
 
-        ch.output
-      ]
-    );
+      "-g",
+      "50",
 
-  ffmpegProcesses[id] =
-    ffmpeg;
+      // -----------------------------------------------
+      // 🔊 AUDIO
+      // -----------------------------------------------
 
+      "-c:a",
+      "aac",
+
+      "-b:a",
+      "128k",
+
+      "-ar",
+      "44100",
+
+      // -----------------------------------------------
+      // 📡 OUTPUT
+      // -----------------------------------------------
+
+      "-f",
+      "flv",
+
+      ch.output
+
+    ]
+  );
+
+ffmpegProcesses[id] =
+  ffmpeg;
   // ====================================================
   // 📝 STDERR
   // ====================================================
