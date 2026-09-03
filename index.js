@@ -2514,21 +2514,33 @@ setInterval(
 // ===============================
 app.get("/dashboard", (req, res) => {
 
-  const html = `
+const html = `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+
 <title>لوحة تحكم القنوات</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
+
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+rel="stylesheet">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.46.0/tabler-icons.min.css">
 
 <style>
+
+/* ======================================================
+   ROOT
+====================================================== */
 
 :root{
 --page:#F5F6F8;
@@ -2536,17 +2548,23 @@ app.get("/dashboard", (req, res) => {
 --surface-2:#FAFBFC;
 --border:#E4E7EC;
 --border-strong:#D0D5DD;
+
 --text:#101828;
 --text-2:#475467;
 --text-3:#98A2B3;
+
 --accent:#2563EB;
 --accent-bg:#EFF4FF;
+
 --success:#16A34A;
 --success-bg:#EDFAF1;
+
 --danger:#DC2626;
 --danger-bg:#FDEDEC;
+
 --warning:#D97706;
 --warning-bg:#FEF6E7;
+
 --radius:10px;
 --radius-lg:14px;
 }
@@ -2575,33 +2593,62 @@ html[data-accent="amber"]{
 --success-bg:#FAEEDA;
 }
 
-*{ box-sizing:border-box; }
+/* ======================================================
+   GENERAL
+====================================================== */
 
-html, body{ margin:0; padding:0; overflow-x:hidden; }
+*{
+box-sizing:border-box;
+}
+
+html,
+body{
+margin:0;
+padding:0;
+overflow-x:hidden;
+}
 
 body{
-font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
+font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
 background:var(--page);
 color:var(--text);
 min-height:100vh;
 min-height:100dvh;
 }
 
-.mono{ font-family:'IBM Plex Mono', monospace; }
+button,
+input,
+select{
+font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
+}
 
-.app{ display:flex; min-height:100vh; min-height:100dvh; }
+.mono{
+font-family:'IBM Plex Mono',monospace;
+}
 
-/* ---------- sidebar ---------- */
+.app{
+display:flex;
+min-height:100vh;
+min-height:100dvh;
+}
+
+/* ======================================================
+   SIDEBAR
+====================================================== */
 
 .side{
 width:240px;
 flex-shrink:0;
 background:var(--surface);
 border-left:1px solid var(--border);
+
 display:flex;
 flex-direction:column;
+
 padding:20px 16px;
-transition:transform 0.25s;
+
+transition:transform .25s;
+
 z-index:1000;
 }
 
@@ -2609,687 +2656,1831 @@ z-index:1000;
 display:flex;
 align-items:center;
 gap:10px;
-padding:0 6px 20px 6px;
+
+padding:0 6px 20px;
 margin-bottom:16px;
+
 border-bottom:1px solid var(--border);
 }
 
 .brand .mark{
 width:34px;
 height:34px;
+
 border-radius:9px;
+
 background:var(--accent-bg);
 color:var(--accent);
+
 display:flex;
 align-items:center;
 justify-content:center;
+
 font-size:17px;
-flex-shrink:0;
 }
 
-.brand .word{ font-weight:600; font-size:15px; }
-.brand .word small{ display:block; font-size:11px; color:var(--text-3); font-weight:400; margin-top:1px; }
+.brand .word{
+font-weight:600;
+font-size:15px;
+}
+
+.brand .word small{
+display:block;
+font-size:11px;
+color:var(--text-3);
+font-weight:400;
+margin-top:1px;
+}
 
 .navLabel{
 font-size:11px;
 color:var(--text-3);
-padding:0 8px 6px 8px;
+
+padding:0 8px 6px;
+
 margin-top:10px;
+
 font-weight:500;
 }
 
 .side button{
 width:100%;
+
 display:flex;
 align-items:center;
 gap:10px;
+
 padding:10px 12px;
 margin-bottom:2px;
+
 border:none;
 border-radius:var(--radius);
+
 background:transparent;
 color:var(--text-2);
-font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
+
 font-weight:500;
 font-size:14px;
+
 cursor:pointer;
+
 text-align:right;
-transition:0.12s;
+
+transition:.12s;
 }
 
-.side button i{ font-size:17px; color:var(--text-3); }
+.side button i{
+font-size:17px;
+color:var(--text-3);
+}
 
-.side button:hover{ background:var(--surface-2); }
-.side button.navActive{ background:var(--accent-bg); color:var(--accent); }
-.side button.navActive i{ color:var(--accent); }
+.side button:hover{
+background:var(--surface-2);
+}
 
-.side .foot{ margin-top:auto; padding-top:14px; border-top:1px solid var(--border); }
+.side button.navActive{
+background:var(--accent-bg);
+color:var(--accent);
+}
 
-.side .goBtn{ color:var(--success); }
-.side .goBtn i{ color:var(--success); }
-.side .stopBtn{ color:var(--danger); }
-.side .stopBtn i{ color:var(--danger); }
+.side button.navActive i{
+color:var(--accent);
+}
 
-/* ---------- workspace ---------- */
+.side .foot{
+margin-top:auto;
 
-.workspace{ flex:1; display:flex; flex-direction:column; min-width:0; }
+padding-top:14px;
+
+border-top:1px solid var(--border);
+}
+
+.side .goBtn{
+color:var(--success);
+}
+
+.side .goBtn i{
+color:var(--success);
+}
+
+.side .stopBtn{
+color:var(--danger);
+}
+
+.side .stopBtn i{
+color:var(--danger);
+}
+
+/* ======================================================
+   WORKSPACE
+====================================================== */
+
+.workspace{
+flex:1;
+display:flex;
+flex-direction:column;
+min-width:0;
+}
 
 .topbar{
 height:60px;
 flex-shrink:0;
+
 background:var(--surface);
 border-bottom:1px solid var(--border);
+
 display:flex;
 align-items:center;
 justify-content:space-between;
+
 padding:0 24px;
 }
 
-.topbar h1{ font-size:16px; font-weight:600; margin:0; }
+.topbar h1{
+font-size:16px;
+font-weight:600;
+margin:0;
+}
 
 .pill{
 display:inline-flex;
 align-items:center;
 gap:6px;
+
 padding:5px 12px;
+
 border-radius:20px;
+
 font-size:12px;
 font-weight:500;
 }
 
-.pill i{ font-size:14px; }
+.pill i{
+font-size:14px;
+}
 
-.conn-ok{ background:var(--success-bg); color:var(--success); }
-.conn-bad{ background:var(--danger-bg); color:var(--danger); }
+.conn-ok{
+background:var(--success-bg);
+color:var(--success);
+}
+
+.conn-bad{
+background:var(--danger-bg);
+color:var(--danger);
+}
 
 .iconBtn{
 width:36px;
 height:36px;
+
 display:flex;
 align-items:center;
 justify-content:center;
+
 border-radius:9px;
+
 border:1px solid var(--border);
 background:var(--surface);
+
 color:var(--text-2);
+
 cursor:pointer;
+
 font-size:16px;
 padding:0;
 }
 
-.iconBtn:hover{ border-color:var(--border-strong); background:var(--surface-2); }
+.iconBtn:hover{
+border-color:var(--border-strong);
+background:var(--surface-2);
+}
 
 .themeMenu{
 position:absolute;
+
 top:56px;
 left:24px;
+
 background:var(--surface);
+
 border:1px solid var(--border);
 border-radius:var(--radius);
+
 padding:8px;
+
 display:none;
 flex-direction:column;
+
 gap:2px;
+
 z-index:1500;
-box-shadow:0 8px 24px rgba(16,24,40,0.12);
+
+box-shadow:0 8px 24px rgba(16,24,40,.12);
+
 min-width:160px;
 }
 
-.themeMenu.show{ display:flex; }
+.themeMenu.show{
+display:flex;
+}
 
 .themeMenu button{
 display:flex;
 align-items:center;
 gap:8px;
+
 background:transparent;
 border:1px solid transparent;
+
 color:var(--text-2);
+
 padding:8px 10px;
+
 border-radius:8px;
+
 font-size:13px;
 font-weight:500;
+
 cursor:pointer;
+
 text-align:right;
+
 width:100%;
 }
 
-.themeMenu button:hover{ background:var(--surface-2); }
-.themeMenu button.themeActive{ color:var(--text); border-color:var(--border); background:var(--surface-2); }
+.themeMenu button:hover{
+background:var(--surface-2);
+}
 
-.swatch{ width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.themeMenu button.themeActive{
+color:var(--text);
 
-.content{ flex:1; padding:24px; overflow:auto; }
+border-color:var(--border);
 
-/* ---------- stat cards ---------- */
+background:var(--surface-2);
+}
+
+.swatch{
+width:12px;
+height:12px;
+
+border-radius:50%;
+
+flex-shrink:0;
+}
+
+.content{
+flex:1;
+
+padding:24px;
+
+overflow:auto;
+}
+
+/* ======================================================
+   STATS
+====================================================== */
 
 .statGrid{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+
+grid-template-columns:
+repeat(auto-fit,minmax(160px,1fr));
+
 gap:12px;
+
 margin-bottom:20px;
 }
 
 .statCard{
 background:var(--surface);
+
 border:1px solid var(--border);
+
 border-radius:var(--radius-lg);
+
 padding:16px 18px;
 }
 
-.statCard .lbl{ font-size:12.5px; color:var(--text-2); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-.statCard .lbl i{ font-size:15px; }
-.statCard .num{ font-size:26px; font-weight:600; font-family:'IBM Plex Mono', monospace; }
+.statCard .lbl{
+font-size:12.5px;
 
-.statCard.ok .num{ color:var(--success); }
-.statCard.off .num{ color:var(--text-2); }
-.statCard.accent .num{ color:var(--accent); }
-.statCard.warn .num{ color:var(--warning); }
+color:var(--text-2);
 
-/* ---------- toolbar ---------- */
+margin-bottom:6px;
 
-.toolbar{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+display:flex;
+align-items:center;
+gap:6px;
+}
 
-.toolbar input, .toolbar select{
-font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
+.statCard .lbl i{
+font-size:15px;
+}
+
+.statCard .num{
+font-size:26px;
+
+font-weight:600;
+
+font-family:'IBM Plex Mono',monospace;
+}
+
+.statCard.ok .num{
+color:var(--success);
+}
+
+.statCard.off .num{
+color:var(--text-2);
+}
+
+.statCard.accent .num{
+color:var(--accent);
+}
+
+.statCard.warn .num{
+color:var(--warning);
+}
+
+/* ======================================================
+   TOOLBAR
+====================================================== */
+
+.toolbar{
+display:flex;
+
+gap:10px;
+
+margin-bottom:18px;
+
+flex-wrap:wrap;
+}
+
+.toolbar input,
+.toolbar select{
+font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
+
 padding:10px 14px;
+
 border-radius:var(--radius);
+
 border:1px solid var(--border);
+
 background:var(--surface);
+
 color:var(--text);
+
 outline:none;
+
 font-size:13.5px;
 }
 
-.toolbar input{ flex:1 1 240px; }
-.toolbar select{ flex:0 1 190px; cursor:pointer; }
-.toolbar input:focus, .toolbar select:focus{ border-color:var(--accent); }
+.toolbar input{
+flex:1 1 240px;
+}
 
-/* ---------- channel cards ---------- */
+.toolbar select{
+flex:0 1 190px;
+
+cursor:pointer;
+}
+
+.toolbar input:focus,
+.toolbar select:focus{
+border-color:var(--accent);
+}
+
+/* ======================================================
+   CHANNEL CARD
+====================================================== */
 
 .grid{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+
+grid-template-columns:
+repeat(auto-fill,minmax(280px,1fr));
+
 gap:14px;
 }
 
 .card{
 background:var(--surface);
+
 border:1px solid var(--border);
+
 border-radius:var(--radius-lg);
+
 padding:16px;
 padding-top:19px;
-transition:0.15s;
+
+transition:.15s;
+
 position:relative;
+
 overflow:hidden;
 }
 
 .card::before{
 content:"";
+
 position:absolute;
+
 top:0;
 left:0;
 right:0;
+
 height:3px;
+
 background:var(--accent);
 }
 
-.card:hover{ border-color:var(--border-strong); box-shadow:0 1px 3px rgba(16,24,40,0.06); }
+.card:hover{
+border-color:var(--border-strong);
 
-.cardHead{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+box-shadow:0 1px 3px rgba(16,24,40,.06);
+}
+
+.cardHead{
+display:flex;
+align-items:center;
+
+gap:10px;
+
+margin-bottom:12px;
+}
 
 .logoBox{
 width:38px;
 height:38px;
+
 border-radius:9px;
+
 background:var(--surface-2);
+
 border:1px solid var(--border);
+
 flex-shrink:0;
+
 overflow:hidden;
+
 display:flex;
 align-items:center;
 justify-content:center;
+
 color:var(--text-3);
+
 font-size:16px;
 }
 
-.logoBox img{ width:100%; height:100%; object-fit:cover; }
+.logoBox img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
 
-.cardHead .titleWrap{ flex:1; min-width:0; }
+.cardHead .titleWrap{
+flex:1;
+min-width:0;
+}
 
 .cardHead h3{
 margin:0;
-font-family:'IBM Plex Mono', monospace;
+
+font-family:'IBM Plex Mono',monospace;
+
 font-size:15px;
+
 font-weight:600;
+
 direction:ltr;
+
 text-align:left;
+
 overflow:hidden;
+
 text-overflow:ellipsis;
+
 white-space:nowrap;
 }
 
 .catTag{
 display:inline-block;
+
 font-size:10.5px;
+
 color:var(--text-3);
+
 margin-top:2px;
 }
 
 .statusPill{
 font-size:11px;
+
 font-weight:600;
+
 padding:4px 9px;
+
 border-radius:6px;
+
 display:inline-flex;
 align-items:center;
+
 gap:4px;
+
 flex-shrink:0;
 }
 
-.statusPill.on{ background:var(--success-bg); color:var(--success); }
-.statusPill.off{ background:var(--surface-2); color:var(--text-3); }
-.statusPill i{ font-size:8px; }
+.statusPill.on{
+background:var(--success-bg);
+color:var(--success);
+}
 
-.readoutRow{ display:flex; gap:10px; margin-bottom:12px; }
+.statusPill.off{
+background:var(--surface-2);
+color:var(--text-3);
+}
+
+.statusPill i{
+font-size:8px;
+}
+
+.readoutRow{
+display:flex;
+
+gap:10px;
+
+margin-bottom:12px;
+}
 
 .readoutBox{
 flex:1;
+
 background:var(--surface-2);
+
 border-radius:8px;
+
 padding:8px 10px;
 }
 
-.readoutBox .rLbl{ font-size:10px; color:var(--text-3); margin-bottom:2px; }
-.readoutBox .rVal{ font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; }
-.readoutBox:first-child .rVal{ color:var(--accent); }
+.readoutBox .rLbl{
+font-size:10px;
 
-.techLine{ margin-bottom:7px; }
-.techLine .tLbl{ font-size:10px; color:var(--text-3); margin-bottom:2px; }
+color:var(--text-3);
+
+margin-bottom:2px;
+}
+
+.readoutBox .rVal{
+font-family:'IBM Plex Mono',monospace;
+
+font-size:15px;
+
+font-weight:600;
+}
+
+.readoutBox:first-child .rVal{
+color:var(--accent);
+}
+
+.techLine{
+margin-bottom:7px;
+}
+
+.techLine .tLbl{
+font-size:10px;
+
+color:var(--text-3);
+
+margin-bottom:2px;
+}
+
 .techLine .tVal{
-font-family:'IBM Plex Mono', monospace;
+font-family:'IBM Plex Mono',monospace;
+
 font-size:11px;
+
 color:var(--text-2);
+
 direction:ltr;
+
 text-align:left;
+
 display:block;
+
 overflow:hidden;
+
 text-overflow:ellipsis;
+
 white-space:nowrap;
 }
 
-.btnRow{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+.btnRow{
+display:flex;
 
-.editField{ margin-bottom:9px; }
-.editField .tLbl{ font-size:10px; color:var(--text-3); margin-bottom:3px; }
-.editField input{
-width:100%;
-padding:7px 9px;
-border-radius:7px;
-border:1px solid var(--border);
-background:var(--surface-2);
-color:var(--text);
-outline:none;
-font-family:'IBM Plex Mono', monospace;
-font-size:11.5px;
-direction:ltr;
-text-align:left;
-}
-.editField input:focus{ border-color:var(--accent); }
+gap:6px;
 
-.editActions{ display:flex; gap:6px; margin-top:12px; }
-.editActions button{
-flex:1;
-padding:9px;
-border-radius:8px;
-border:1px solid var(--border);
-cursor:pointer;
-font-weight:600;
-font-size:12.5px;
+margin-top:12px;
+
+flex-wrap:wrap;
 }
-.editActions .saveBtn{ background:var(--accent); color:#fff; border-color:var(--accent); }
-.editActions .cancelBtn{ background:var(--surface-2); color:var(--text-2); }
 
 .iBtn{
 width:32px;
 height:32px;
+
 display:flex;
 align-items:center;
 justify-content:center;
+
 border-radius:8px;
+
 border:1px solid var(--border);
+
 background:var(--surface);
+
 color:var(--text-2);
+
 cursor:pointer;
+
 font-size:15px;
-transition:0.12s;
+
+transition:.12s;
 }
 
-.iBtn:hover{ border-color:var(--border-strong); background:var(--surface-2); }
-.iBtn.go{ color:var(--success); }
-.iBtn.stop{ color:var(--danger); }
+.iBtn:hover{
+border-color:var(--border-strong);
 
-/* ---------- add channel form ---------- */
+background:var(--surface-2);
+}
+
+.iBtn.go{
+color:var(--success);
+}
+
+.iBtn.stop{
+color:var(--danger);
+}
+
+/* ======================================================
+   EDIT
+====================================================== */
+
+.editField{
+margin-bottom:9px;
+}
+
+.editField .tLbl{
+font-size:10px;
+
+color:var(--text-3);
+
+margin-bottom:3px;
+}
+
+.editField input,
+.editField select{
+width:100%;
+
+padding:7px 9px;
+
+border-radius:7px;
+
+border:1px solid var(--border);
+
+background:var(--surface-2);
+
+color:var(--text);
+
+outline:none;
+
+font-family:'IBM Plex Mono',monospace;
+
+font-size:11.5px;
+
+direction:ltr;
+
+text-align:left;
+}
+
+.editField select{
+font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
+}
+
+.editField input:focus,
+.editField select:focus{
+border-color:var(--accent);
+}
+
+.editActions{
+display:flex;
+
+gap:6px;
+
+margin-top:12px;
+}
+
+.editActions button{
+flex:1;
+
+padding:9px;
+
+border-radius:8px;
+
+border:1px solid var(--border);
+
+cursor:pointer;
+
+font-weight:600;
+
+font-size:12.5px;
+}
+
+.editActions .saveBtn{
+background:var(--accent);
+
+color:#fff;
+
+border-color:var(--accent);
+}
+
+.editActions .cancelBtn{
+background:var(--surface-2);
+
+color:var(--text-2);
+}
+
+/* ======================================================
+   SOURCES MANAGER
+====================================================== */
+
+.sourcesBox{
+margin-top:14px;
+
+border:1px solid var(--border);
+
+border-radius:10px;
+
+background:var(--surface-2);
+
+padding:10px;
+}
+
+.sourcesHeader{
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+gap:8px;
+
+margin-bottom:8px;
+}
+
+.sourcesHeader strong{
+font-size:12px;
+}
+
+.sourceCountBadge{
+font-family:'IBM Plex Mono',monospace;
+
+font-size:10px;
+
+background:var(--accent-bg);
+
+color:var(--accent);
+
+padding:3px 7px;
+
+border-radius:6px;
+}
+
+.sourceItem{
+display:flex;
+
+align-items:center;
+
+gap:6px;
+
+background:var(--surface);
+
+border:1px solid var(--border);
+
+border-radius:8px;
+
+padding:7px;
+
+margin-bottom:6px;
+}
+
+.sourceItem:last-child{
+margin-bottom:0;
+}
+
+.sourceIndex{
+width:24px;
+height:24px;
+
+border-radius:6px;
+
+background:var(--accent-bg);
+
+color:var(--accent);
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-family:'IBM Plex Mono',monospace;
+
+font-size:10px;
+
+font-weight:600;
+
+flex-shrink:0;
+}
+
+.sourceInputs{
+flex:1;
+
+min-width:0;
+
+display:flex;
+
+flex-direction:column;
+
+gap:5px;
+}
+
+.sourceInputs input{
+width:100%;
+
+padding:6px 7px;
+
+border:1px solid var(--border);
+
+border-radius:6px;
+
+background:var(--surface-2);
+
+color:var(--text);
+
+font-family:'IBM Plex Mono',monospace;
+
+font-size:10.5px;
+
+direction:ltr;
+
+text-align:left;
+
+outline:none;
+}
+
+.sourceInputs input:focus{
+border-color:var(--accent);
+}
+
+.sourceButtons{
+display:flex;
+
+gap:3px;
+
+flex-direction:column;
+}
+
+.sourceBtn{
+width:28px;
+height:26px;
+
+border-radius:6px;
+
+border:1px solid var(--border);
+
+background:var(--surface);
+
+color:var(--text-2);
+
+cursor:pointer;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+}
+
+.sourceBtn:hover{
+background:var(--surface-2);
+
+border-color:var(--border-strong);
+}
+
+.sourceBtn.danger{
+color:var(--danger);
+}
+
+.sourceBtn.play{
+color:var(--success);
+}
+
+.addSourceBtn{
+width:100%;
+
+margin-top:8px;
+
+padding:8px;
+
+border-radius:8px;
+
+border:1px dashed var(--border-strong);
+
+background:var(--surface);
+
+color:var(--accent);
+
+cursor:pointer;
+
+font-weight:600;
+
+font-size:12px;
+}
+
+.addSourceBtn:hover{
+background:var(--accent-bg);
+}
+
+.loopRow{
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+gap:8px;
+
+margin-top:9px;
+
+padding-top:9px;
+
+border-top:1px solid var(--border);
+
+font-size:11px;
+
+color:var(--text-2);
+}
+
+.loopSwitch{
+display:flex;
+
+align-items:center;
+
+gap:6px;
+}
+
+.loopSwitch input{
+accent-color:var(--accent);
+}
+
+/* ======================================================
+   ADD FORM
+====================================================== */
 
 .formCard{
-max-width:460px;
+max-width:560px;
+
 background:var(--surface);
+
 border:1px solid var(--border);
+
 border-radius:var(--radius-lg);
+
 padding:22px;
 }
 
 .formCard label{
 display:block;
+
 font-size:12.5px;
+
 color:var(--text-2);
+
 margin-bottom:6px;
+
 margin-top:14px;
+
 font-weight:500;
 }
 
-.formCard label:first-of-type{ margin-top:0; }
+.formCard label:first-of-type{
+margin-top:0;
+}
 
-.formCard input, .formCard select{
+.formCard input,
+.formCard select{
 width:100%;
+
 padding:10px 13px;
+
 border-radius:var(--radius);
+
 border:1px solid var(--border);
+
 background:var(--surface);
+
 color:var(--text);
+
 outline:none;
-font-family:'IBM Plex Mono', monospace;
+
+font-family:'IBM Plex Mono',monospace;
+
 font-size:13px;
+
 direction:ltr;
+
 text-align:left;
 }
 
-.formCard input:focus{ border-color:var(--accent); }
+.formCard select{
+font-family:'IBM Plex Sans Arabic',Arial,sans-serif;
+}
 
-.formCard .hint{ font-size:11px; color:var(--text-3); margin-top:4px; }
+.formCard input:focus,
+.formCard select:focus{
+border-color:var(--accent);
+}
+
+.formCard .hint{
+font-size:11px;
+
+color:var(--text-3);
+
+margin-top:4px;
+}
 
 .formCard .submit{
 margin-top:20px;
+
 width:100%;
+
 background:var(--accent);
+
 color:#fff;
+
 border:none;
+
 border-radius:var(--radius);
+
 padding:11px;
+
 font-size:14px;
+
 font-weight:600;
+
 cursor:pointer;
 }
 
-/* ---------- events panel ---------- */
+.formCard .submit:hover{
+opacity:.92;
+}
+
+/* ======================================================
+   EVENTS
+====================================================== */
 
 .panel{
 background:var(--surface);
+
 border:1px solid var(--border);
+
 border-radius:var(--radius-lg);
+
 overflow:hidden;
 }
 
 .evRow{
 display:flex;
+
 align-items:center;
+
 gap:12px;
+
 padding:12px 16px;
+
 border-bottom:1px solid var(--border);
 }
 
-.evRow:last-child{ border-bottom:none; }
+.evRow:last-child{
+border-bottom:none;
+}
 
 .evIcon{
 width:30px;
 height:30px;
+
 border-radius:8px;
+
 display:flex;
+
 align-items:center;
+
 justify-content:center;
+
 flex-shrink:0;
+
 font-size:14px;
 }
 
-.evIcon.on{ background:var(--success-bg); color:var(--success); }
-.evIcon.off{ background:var(--danger-bg); color:var(--danger); }
-.evIcon.warn{ background:var(--warning-bg); color:var(--warning); }
+.evIcon.on{
+background:var(--success-bg);
+color:var(--success);
+}
 
-.evBody{ flex:1; min-width:0; }
-.evTitle{ font-size:13.5px; font-weight:500; }
-.evTitle .mono{ font-weight:600; }
-.evMsg{ font-size:12px; color:var(--text-2); margin-top:1px; }
-.evTime{ font-size:11px; color:var(--text-3); white-space:nowrap; font-family:'IBM Plex Mono', monospace; }
+.evIcon.off{
+background:var(--danger-bg);
+color:var(--danger);
+}
 
-/* ---------- log modal ---------- */
+.evIcon.warn{
+background:var(--warning-bg);
+color:var(--warning);
+}
+
+.evBody{
+flex:1;
+
+min-width:0;
+}
+
+.evTitle{
+font-size:13.5px;
+
+font-weight:500;
+}
+
+.evTitle .mono{
+font-weight:600;
+}
+
+.evMsg{
+font-size:12px;
+
+color:var(--text-2);
+
+margin-top:1px;
+}
+
+.evTime{
+font-size:11px;
+
+color:var(--text-3);
+
+white-space:nowrap;
+
+font-family:'IBM Plex Mono',monospace;
+}
+
+/* ======================================================
+   LOG
+====================================================== */
 
 .logOverlay{
 display:none;
+
 position:fixed;
+
 inset:0;
-background:rgba(16,24,40,0.45);
+
+background:rgba(16,24,40,.45);
+
 z-index:2000;
+
 align-items:center;
+
 justify-content:center;
+
 padding:20px;
 }
 
-.logOverlay.show{ display:flex; }
+.logOverlay.show{
+display:flex;
+}
 
 .logModal{
 background:var(--surface);
+
 border-radius:var(--radius-lg);
+
 width:100%;
+
 max-width:760px;
+
 max-height:78vh;
+
 display:flex;
+
 flex-direction:column;
+
 overflow:hidden;
-box-shadow:0 20px 50px rgba(16,24,40,0.25);
+
+box-shadow:0 20px 50px rgba(16,24,40,.25);
 }
 
 .logHeader{
 display:flex;
+
 justify-content:space-between;
+
 align-items:center;
+
 padding:14px 18px;
+
 border-bottom:1px solid var(--border);
 }
 
-.logHeader h3{ margin:0; font-size:14px; font-weight:600; }
+.logHeader h3{
+margin:0;
+
+font-size:14px;
+
+font-weight:600;
+}
 
 .logHeader button{
 padding:7px 12px;
+
 border-radius:var(--radius);
+
 border:1px solid var(--border);
+
 background:var(--surface);
+
 color:var(--text-2);
+
 cursor:pointer;
+
 font-size:12.5px;
+
 font-weight:500;
 }
 
 .logBody{
 padding:14px 18px;
+
 overflow-y:auto;
+
 background:#0D1117;
-font-family:'IBM Plex Mono', monospace;
+
+font-family:'IBM Plex Mono',monospace;
+
 font-size:11.5px;
+
 color:#8FE3C0;
+
 white-space:pre-wrap;
+
 word-break:break-all;
+
 direction:ltr;
+
 text-align:left;
+
 line-height:1.6;
 }
 
-.logBody .logLine{ padding:2px 0; border-bottom:1px solid #1c2531; }
-.logBody .logTime{ color:#5B9EF2; margin-left:8px; }
+.logBody .logLine{
+padding:2px 0;
 
-/* ---------- mobile ---------- */
+border-bottom:1px solid #1c2531;
+}
+
+.logBody .logTime{
+color:#5B9EF2;
+
+margin-left:8px;
+}
+
+/* ======================================================
+   MOBILE
+====================================================== */
 
 .menuBtn{
 display:none;
+
 position:fixed;
+
 top:12px;
+
 left:12px;
+
 z-index:1100;
+
 width:40px;
 height:40px;
+
 border-radius:9px;
+
 border:1px solid var(--border);
+
 background:var(--surface);
+
 color:var(--text);
+
 font-size:17px;
+
 cursor:pointer;
+
 align-items:center;
+
 justify-content:center;
 }
 
-.overlay{ display:none; position:fixed; inset:0; background:rgba(16,24,40,0.4); z-index:999; }
-.overlay.show{ display:block; }
+.overlay{
+display:none;
 
-@media (max-width: 860px){
+position:fixed;
 
-.app{ display:block; }
+inset:0;
 
-.menuBtn{ display:flex; }
+background:rgba(16,24,40,.4);
+
+z-index:999;
+}
+
+.overlay.show{
+display:block;
+}
+
+@media(max-width:860px){
+
+.app{
+display:block;
+}
+
+.menuBtn{
+display:flex;
+}
 
 .side{
 position:fixed;
+
 top:0;
 right:0;
+
 height:100%;
 height:100dvh;
+
 width:250px;
+
 transform:translateX(100%);
-box-shadow:-10px 0 30px rgba(16,24,40,0.25);
+
+box-shadow:-10px 0 30px rgba(16,24,40,.25);
 }
 
-.side.open{ transform:translateX(0); }
+.side.open{
+transform:translateX(0);
+}
 
-.topbar{ padding:0 16px 0 60px; }
+.topbar{
+padding:0 16px 0 60px;
+}
 
-.content{ padding:16px; }
+.content{
+padding:16px;
+}
 
-.statGrid{ grid-template-columns:repeat(2,1fr); }
+.statGrid{
+grid-template-columns:repeat(2,1fr);
+}
 
-.grid{ grid-template-columns:1fr; }
+.grid{
+grid-template-columns:1fr;
+}
 
+.sourceItem{
+align-items:flex-start;
+}
+
+}
+
+/* ======================================================
+   SOURCE SPECIAL
+====================================================== */
+
+.sourceTypeHint{
+font-size:10px;
+
+color:var(--text-3);
+
+margin-top:3px;
+}
+
+.multiBadge{
+display:inline-flex;
+
+align-items:center;
+
+gap:4px;
+
+font-size:10px;
+
+background:var(--accent-bg);
+
+color:var(--accent);
+
+border-radius:6px;
+
+padding:3px 7px;
+
+margin-top:3px;
+}
+
+.nextBtn{
+width:auto;
+
+padding:0 9px;
+
+gap:5px;
+
+font-size:11px;
 }
 
 </style>
+
 </head>
 
 <body>
 
-<button class="menuBtn" onclick="toggleMenu()"><i class="ti ti-menu-2"></i></button>
-<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+<button
+class="menuBtn"
+onclick="toggleMenu()">
+
+<i class="ti ti-menu-2"></i>
+
+</button>
+
+<div
+class="overlay"
+id="overlay"
+onclick="closeMenu()">
+</div>
 
 <div class="app">
 
-<div class="side" id="sideMenu">
+<!-- ======================================================
+     SIDEBAR
+====================================================== -->
+
+<div
+class="side"
+id="sideMenu">
 
 <div class="brand">
-<div class="mark"><i class="ti ti-broadcast"></i></div>
-<div class="word">لوحة القنوات<small>IPTV CONTROL</small></div>
+
+<div class="mark">
+<i class="ti ti-broadcast"></i>
 </div>
 
-<div class="navLabel">التنقل</div>
+<div class="word">
+لوحة القنوات
+<small>IPTV CONTROL</small>
+</div>
 
-<button class="navActive" id="navChannels" onclick="show('channels');closeMenu()"><i class="ti ti-device-tv"></i>القنوات</button>
-<button id="navAdd" onclick="show('add');closeMenu()"><i class="ti ti-plus"></i>إضافة قناة</button>
-<button id="navEvents" onclick="show('events');closeMenu()"><i class="ti ti-list-details"></i>سجل الأحداث</button>
+</div>
+
+<div class="navLabel">
+التنقل
+</div>
+
+<button
+class="navActive"
+id="navChannels"
+onclick="show('channels');closeMenu()">
+
+<i class="ti ti-device-tv"></i>
+
+القنوات
+
+</button>
+
+<button
+id="navAdd"
+onclick="show('add');closeMenu()">
+
+<i class="ti ti-plus"></i>
+
+إضافة قناة
+
+</button>
+
+<button
+id="navEvents"
+onclick="show('events');closeMenu()">
+
+<i class="ti ti-list-details"></i>
+
+سجل الأحداث
+
+</button>
 
 <div class="foot">
-<button class="goBtn" onclick="startAll()"><i class="ti ti-player-play"></i>تشغيل الكل</button>
-<button class="stopBtn" onclick="stopAll()"><i class="ti ti-player-stop"></i>إيقاف الكل</button>
+
+<button
+class="goBtn"
+onclick="startAll()">
+
+<i class="ti ti-player-play"></i>
+
+تشغيل الكل
+
+</button>
+
+<button
+class="stopBtn"
+onclick="stopAll()">
+
+<i class="ti ti-player-stop"></i>
+
+إيقاف الكل
+
+</button>
+
 </div>
 
 </div>
+
+<!-- ======================================================
+     WORKSPACE
+====================================================== -->
 
 <div class="workspace">
 
 <div class="topbar">
-<h1>القنوات المباشرة</h1>
-<div style="display:flex;align-items:center;gap:10px;position:relative">
-<div id="clock" class="pill mono" style="background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)">--:--:--</div>
-<button class="iconBtn" onclick="toggleThemeMenu(event)" title="تغيير اللون"><i class="ti ti-palette"></i></button>
-<div id="connStatus" class="pill conn-bad"><i class="ti ti-loader-2"></i>اتصال...</div>
 
-<div class="themeMenu" id="themeMenu">
-<button data-a="blue" onclick="setAccent('blue')"><span class="swatch" style="background:#2563EB"></span>أزرق</button>
-<button data-a="teal" onclick="setAccent('teal')"><span class="swatch" style="background:#0F6E56"></span>أخضر مائي</button>
-<button data-a="amber" onclick="setAccent('amber')"><span class="swatch" style="background:#854F0B"></span>كهرماني</button>
+<h1>
+القنوات المباشرة
+</h1>
+
+<div
+style="display:flex;align-items:center;gap:10px;position:relative">
+
+<div
+id="clock"
+class="pill mono"
+style="background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)">
+
+--:--:--
+
+</div>
+
+<button
+class="iconBtn"
+onclick="toggleThemeMenu(event)"
+title="تغيير اللون">
+
+<i class="ti ti-palette"></i>
+
+</button>
+
+<div
+id="connStatus"
+class="pill conn-bad">
+
+<i class="ti ti-loader-2"></i>
+
+اتصال...
+
+</div>
+
+<div
+class="themeMenu"
+id="themeMenu">
+
+<button
+data-a="blue"
+onclick="setAccent('blue')">
+
+<span
+class="swatch"
+style="background:#2563EB">
+</span>
+
+أزرق
+
+</button>
+
+<button
+data-a="teal"
+onclick="setAccent('teal')">
+
+<span
+class="swatch"
+style="background:#0F6E56">
+</span>
+
+أخضر مائي
+
+</button>
+
+<button
+data-a="amber"
+onclick="setAccent('amber')">
+
+<span
+class="swatch"
+style="background:#854F0B">
+</span>
+
+كهرماني
+
+</button>
+
 </div>
 
 </div>
+
 </div>
 
 <div class="content">
 
+<!-- ======================================================
+     CHANNELS
+====================================================== -->
+
 <section id="channels">
 
-<div id="statsBar" class="statGrid"></div>
-
-<div class="toolbar">
-<input id="searchBox" placeholder="بحث عن قناة..." oninput="onSearch(this.value)">
-<select id="categorySelect" onchange="onCategory(this.value)">
-<option value="">كل التصنيفات</option>
-</select>
-<select id="sortSelect" onchange="onSort(this.value)">
-<option value="status">ترتيب: الحالة</option>
-<option value="uptime">ترتيب: الأطول بثًا</option>
-<option value="name">ترتيب: الاسم</option>
-</select>
+<div
+id="statsBar"
+class="statGrid">
 </div>
 
-<div id="list" class="grid"></div>
+<div class="toolbar">
+
+<input
+id="searchBox"
+placeholder="بحث عن قناة..."
+oninput="onSearch(this.value)">
+
+<select
+id="categorySelect"
+onchange="onCategory(this.value)">
+
+<option value="">
+كل التصنيفات
+</option>
+
+</select>
+
+<select
+id="sortSelect"
+onchange="onSort(this.value)">
+
+<option value="status">
+ترتيب: الحالة
+</option>
+
+<option value="uptime">
+ترتيب: الأطول بثًا
+</option>
+
+<option value="name">
+ترتيب: الاسم
+</option>
+
+</select>
+
+</div>
+
+<div
+id="list"
+class="grid">
+</div>
 
 </section>
 
-<section id="add" style="display:none">
+<!-- ======================================================
+     ADD CHANNEL
+====================================================== -->
+
+<section
+id="add"
+style="display:none">
 
 <div class="formCard">
 
-<label>معرف القناة (Channel ID)</label>
-<input id="f_id" placeholder="ch12">
+<label>
+معرف القناة (Channel ID)
+</label>
 
-<label>رابط البث (Input URL)</label>
-<input id="f_input" placeholder="rtmp:// or http://...">
-<div class="hint">تقدر تحط رابط بث مباشر على يوتيوب مباشرة (youtube.com/watch?v=... أو youtube.com/live/...) والسيرفر يستخرج رابط البث الحقيقي منه تلقائي</div>
+<input
+id="f_id"
+placeholder="ch12">
 
-<label>رابط الإخراج (RTMP Output)</label>
-<input id="f_output" placeholder="rtmp://...">
+<label>
+رابط البث (Input URL)
+</label>
 
-<label>رابط اللوجو (Logo URL)</label>
-<input id="f_logo" placeholder="https://.../logo.png">
-<div class="hint">اختياري — صورة صغيرة تظهر جنب اسم القناة</div>
+<input
+id="f_input"
+placeholder="rtmp:// or http://...">
 
-<label>التصنيف (Category)</label>
-<input id="f_category" placeholder="أفلام، رياضة، أطفال...">
-<div class="hint">اختياري — بيستخدم في الفلترة أعلى القائمة</div>
+<div class="hint">
 
-<label>رابط المشاهدة الأصلي (m3u8)</label>
-<input id="f_watchUrl" placeholder="https://.../stream.m3u8">
-<div class="hint">اختياري — لو ضفته، السيرفر يعد المشاهدين الحقيقيين اللي بيدخلوا</div>
+للقنوات المباشرة استخدم رابط المصدر الأساسي.
 
-<label>جودة البث (Quality)</label>
+للفيلم/المسلسل يمكنك أيضًا إضافة عدة روابط بعد إنشاء القناة من زر تعديل.
+
+</div>
+
+<label>
+رابط الإخراج (RTMP Output)
+</label>
+
+<input
+id="f_output"
+placeholder="rtmp://...">
+
+<label>
+رابط اللوجو (Logo URL)
+</label>
+
+<input
+id="f_logo"
+placeholder="https://.../logo.png">
+
+<div class="hint">
+اختياري — صورة تظهر بجانب اسم القناة
+</div>
+
+<label>
+التصنيف (Category)
+</label>
+
+<input
+id="f_category"
+placeholder="أفلام، مسلسلات، رياضة، أطفال...">
+
+<div class="hint">
+مثال: أفلام أو مسلسلات
+</div>
+
+<label>
+رابط المشاهدة الأصلي (m3u8)
+</label>
+
+<input
+id="f_watchUrl"
+placeholder="https://.../stream.m3u8">
+
+<div class="hint">
+اختياري — يستخدم لحساب المشاهدين
+</div>
+
+<label>
+جودة البث (Quality)
+</label>
+
 <select id="f_quality">
-<option value="high">عالية — 1080p (أعلى حمل على المعالج)</option>
-<option value="medium">متوسطة — 720p</option>
-<option value="low">منخفضة — 480p (أخف حمل، مناسب لتشغيل قنوات كتير مع بعض)</option>
+
+<option value="high">
+عالية — 1080p
+</option>
+
+<option value="medium">
+متوسطة — 720p
+</option>
+
+<option value="low">
+منخفضة — 480p
+</option>
+
 </select>
-<div class="hint">قلل الجودة للقنوات الأقل أهمية عشان تقدر تشغّل قنوات أكتر مع بعض من غير ما السيرفر يقف</div>
 
-<button class="submit" onclick="addChannel()">إضافة القناة</button>
+<button
+class="submit"
+onclick="addChannel()">
+
+إضافة القناة
+
+</button>
 
 </div>
 
 </section>
 
-<section id="events" style="display:none">
+<!-- ======================================================
+     EVENTS
+====================================================== -->
 
-<div class="panel" id="eventsList"></div>
+<section
+id="events"
+style="display:none">
+
+<div
+class="panel"
+id="eventsList">
+</div>
 
 </section>
 
@@ -3299,667 +4490,2508 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 
 </div>
 
-<div class="logOverlay" id="logOverlay" onclick="closeLogs(event)">
-<div class="logModal" onclick="event.stopPropagation()">
+<!-- ======================================================
+     LOG MODAL
+====================================================== -->
+
+<div
+class="logOverlay"
+id="logOverlay"
+onclick="closeLogs(event)">
+
+<div
+class="logModal"
+onclick="event.stopPropagation()">
 
 <div class="logHeader">
-<h3 id="logTitle">لوج القناة</h3>
-<button onclick="closeLogs()">إغلاق</button>
+
+<h3 id="logTitle">
+لوج القناة
+</h3>
+
+<button onclick="closeLogs()">
+إغلاق
+</button>
+
 </div>
 
-<div class="logBody" id="logBody"></div>
+<div
+class="logBody"
+id="logBody">
+</div>
 
 <div class="logHeader">
-<button onclick="refreshLogs()">تحديث</button>
+
+<button onclick="refreshLogs()">
+تحديث
+</button>
+
 </div>
 
 </div>
+
 </div>
 
 <script>
 
+/* ======================================================
+   STATE
+====================================================== */
+
 let channelsCache = {};
 let statusCache = {};
 let eventsCache = [];
+
 let searchTerm = "";
 let categoryFilter = "";
 let sortMode = "status";
 
-// حالة التعديل داخل الصفحة (بدون نافذة منبثقة)
 let editingId = null;
+
 let editDraft = {};
 
-function updateDraft(id, field, val){
-if(!editDraft[id]) editDraft[id] = {};
-editDraft[id][field] = val;
+let sourceDraft = {};
+
+/* ======================================================
+   DRAFT
+====================================================== */
+
+function updateDraft(id,field,val){
+
+if(!editDraft[id]){
+editDraft[id] = {};
 }
+
+editDraft[id][field] = val;
+
+}
+
+/* ======================================================
+   ESCAPE
+====================================================== */
+
+function esc(value){
+
+return String(value ?? "")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+/* ======================================================
+   IMAGE
+====================================================== */
 
 function imgFallback(el){
-el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
+
+el.parentElement.innerHTML =
+'<i class="ti ti-device-tv"></i>';
+
 }
+
+/* ======================================================
+   WATCH LINK
+====================================================== */
 
 function copyWatchLink(id){
-const link = window.location.origin + "/watch/" + id + ".m3u8";
-navigator.clipboard?.writeText(link).then(()=>{
-alert("تم نسخ رابط المشاهدة:\\n" + link);
-}).catch(()=>{
-prompt("انسخ الرابط يدويًا:", link);
+
+const link =
+window.location.origin +
+"/watch/" +
+id +
+".m3u8";
+
+navigator.clipboard?.writeText(link)
+
+.then(()=>{
+
+alert(
+"تم نسخ رابط المشاهدة:\\n" +
+link
+);
+
+})
+
+.catch(()=>{
+
+prompt(
+"انسخ الرابط يدويًا:",
+link
+);
+
 });
+
 }
+
+/* ======================================================
+   CLOCK
+====================================================== */
 
 function updateClock(){
-const el = document.getElementById("clock");
+
+const el =
+document.getElementById("clock");
+
 if(!el) return;
+
 const now = new Date();
-const pad = n => String(n).padStart(2,"0");
-el.textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
+
+const pad =
+n => String(n).padStart(2,"0");
+
+el.textContent =
+pad(now.getHours()) +
+":" +
+pad(now.getMinutes()) +
+":" +
+pad(now.getSeconds());
+
 }
+
 updateClock();
-setInterval(updateClock, 1000);
+
+setInterval(
+updateClock,
+1000
+);
+
+/* ======================================================
+   DURATION
+====================================================== */
 
 function formatDuration(totalSeconds){
-totalSeconds = totalSeconds || 0;
-const h = Math.floor(totalSeconds / 3600);
-const m = Math.floor((totalSeconds % 3600) / 60);
-const s = Math.floor(totalSeconds % 60);
-const pad = n => String(n).padStart(2,"0");
-if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
-return m + ":" + pad(s);
+
+totalSeconds =
+totalSeconds || 0;
+
+const h =
+Math.floor(totalSeconds / 3600);
+
+const m =
+Math.floor(
+(totalSeconds % 3600) / 60
+);
+
+const s =
+Math.floor(totalSeconds % 60);
+
+const pad =
+n => String(n).padStart(2,"0");
+
+if(h > 0){
+
+return h +
+":" +
+pad(m) +
+":" +
+pad(s);
+
 }
 
+return m +
+":" +
+pad(s);
+
+}
+
+/* ======================================================
+   THEME
+====================================================== */
+
 function setAccent(name){
-document.documentElement.setAttribute("data-accent", name === "blue" ? "" : name);
-try{ localStorage.setItem("iptv_accent", name); }catch(e){}
-document.querySelectorAll("#themeMenu button").forEach(b => {
-b.classList.toggle("themeActive", b.dataset.a === name);
+
+document.documentElement.setAttribute(
+"data-accent",
+name === "blue" ? "" : name
+);
+
+try{
+
+localStorage.setItem(
+"iptv_accent",
+name
+);
+
+}catch(e){}
+
+document
+.querySelectorAll("#themeMenu button")
+.forEach(b=>{
+
+b.classList.toggle(
+"themeActive",
+b.dataset.a === name
+);
+
 });
-document.getElementById("themeMenu").classList.remove("show");
+
+document
+.getElementById("themeMenu")
+.classList.remove("show");
+
 }
 
 function toggleThemeMenu(e){
+
 e.stopPropagation();
-document.getElementById("themeMenu").classList.toggle("show");
+
+document
+.getElementById("themeMenu")
+.classList.toggle("show");
+
 }
 
-document.addEventListener("click", () => {
-document.getElementById("themeMenu").classList.remove("show");
-});
+document.addEventListener(
+"click",
+()=>{
+
+document
+.getElementById("themeMenu")
+.classList.remove("show");
+
+}
+);
 
 (function initAccent(){
+
 let saved = "blue";
-try{ saved = localStorage.getItem("iptv_accent") || "blue"; }catch(e){}
+
+try{
+
+saved =
+localStorage.getItem("iptv_accent") ||
+"blue";
+
+}catch(e){}
+
 setAccent(saved);
+
 })();
 
+/* ======================================================
+   MOBILE MENU
+====================================================== */
+
 function toggleMenu(){
-document.getElementById("sideMenu").classList.toggle("open");
-document.getElementById("overlay").classList.toggle("show");
+
+document
+.getElementById("sideMenu")
+.classList.toggle("open");
+
+document
+.getElementById("overlay")
+.classList.toggle("show");
+
 }
 
 function closeMenu(){
-document.getElementById("sideMenu").classList.remove("open");
-document.getElementById("overlay").classList.remove("show");
+
+document
+.getElementById("sideMenu")
+.classList.remove("open");
+
+document
+.getElementById("overlay")
+.classList.remove("show");
+
 }
+
+/* ======================================================
+   SECTIONS
+====================================================== */
 
 function show(id){
-document.getElementById("channels").style.display = (id === "channels") ? "block" : "none";
-document.getElementById("add").style.display = (id === "add") ? "block" : "none";
-document.getElementById("events").style.display = (id === "events") ? "block" : "none";
 
-document.getElementById("navChannels").classList.toggle("navActive", id === "channels");
-document.getElementById("navAdd").classList.toggle("navActive", id === "add");
-document.getElementById("navEvents").classList.toggle("navActive", id === "events");
+document.getElementById("channels").style.display =
+id === "channels"
+? "block"
+: "none";
+
+document.getElementById("add").style.display =
+id === "add"
+? "block"
+: "none";
+
+document.getElementById("events").style.display =
+id === "events"
+? "block"
+: "none";
+
+document
+.getElementById("navChannels")
+.classList.toggle(
+"navActive",
+id === "channels"
+);
+
+document
+.getElementById("navAdd")
+.classList.toggle(
+"navActive",
+id === "add"
+);
+
+document
+.getElementById("navEvents")
+.classList.toggle(
+"navActive",
+id === "events"
+);
+
 }
+
+/* ======================================================
+   STATS
+====================================================== */
 
 function renderStats(){
 
-const box = document.getElementById("statsBar");
+const box =
+document.getElementById("statsBar");
+
 if(!box) return;
 
-let live = 0, off = 0, bitrateSum = 0, bitrateCount = 0;
+let live = 0;
+let off = 0;
+
+let bitrateSum = 0;
+let bitrateCount = 0;
 
 for(const id in channelsCache){
+
 if(statusCache[id]?.active){
+
 live++;
+
 if(statusCache[id]?.bitrateKbps){
-bitrateSum += statusCache[id].bitrateKbps;
+
+bitrateSum +=
+statusCache[id].bitrateKbps;
+
 bitrateCount++;
-}
-} else {
-off++;
-}
+
 }
 
-const restarts = eventsCache.filter(e => e.type === "restart").length;
-const avgBitrate = bitrateCount > 0 ? Math.round(bitrateSum / bitrateCount) : 0;
+}else{
+
+off++;
+
+}
+
+}
+
+const restarts =
+eventsCache.filter(
+e => e.type === "restart"
+).length;
+
+const avgBitrate =
+bitrateCount > 0
+? Math.round(
+bitrateSum / bitrateCount
+)
+: 0;
 
 box.innerHTML = \`
+
 <div class="statCard ok">
-<div class="lbl"><i class="ti ti-broadcast"></i>شغالة</div>
-<div class="num mono">\${live}</div>
+
+<div class="lbl">
+<i class="ti ti-broadcast"></i>
+شغالة
 </div>
+
+<div class="num mono">
+\${live}
+</div>
+
+</div>
+
 <div class="statCard off">
-<div class="lbl"><i class="ti ti-player-stop"></i>متوقفة</div>
-<div class="num mono">\${off}</div>
+
+<div class="lbl">
+<i class="ti ti-player-stop"></i>
+متوقفة
 </div>
+
+<div class="num mono">
+\${off}
+</div>
+
+</div>
+
 <div class="statCard accent">
-<div class="lbl"><i class="ti ti-gauge"></i>متوسط البت ريت</div>
-<div class="num mono">\${avgBitrate}<span style="font-size:13px">kbps</span></div>
+
+<div class="lbl">
+<i class="ti ti-gauge"></i>
+متوسط البت ريت
 </div>
+
+<div class="num mono">
+\${avgBitrate}
+<span style="font-size:13px">
+kbps
+</span>
+</div>
+
+</div>
+
 <div class="statCard warn">
-<div class="lbl"><i class="ti ti-refresh"></i>إعادة تشغيل</div>
-<div class="num mono">\${restarts}</div>
+
+<div class="lbl">
+<i class="ti ti-refresh"></i>
+إعادة تشغيل
 </div>
+
+<div class="num mono">
+\${restarts}
+</div>
+
+</div>
+
 \`;
 
 }
 
+/* ======================================================
+   CATEGORY
+====================================================== */
+
 function refreshCategoryOptions(){
 
-const sel = document.getElementById("categorySelect");
-const current = sel.value;
+const sel =
+document.getElementById(
+"categorySelect"
+);
 
-const cats = new Set();
+const current =
+sel.value;
+
+const cats =
+new Set();
+
 for(const id in channelsCache){
-const c = channelsCache[id].category;
-if(c) cats.add(c);
+
+const c =
+channelsCache[id].category;
+
+if(c){
+cats.add(c);
 }
 
-sel.innerHTML = '<option value="">كل التصنيفات</option>' +
-Array.from(cats).map(c => '<option value="' + c + '">' + c + '</option>').join("");
+}
+
+sel.innerHTML =
+'<option value="">كل التصنيفات</option>' +
+
+Array
+.from(cats)
+.map(
+c =>
+'<option value="' +
+esc(c) +
+'">' +
+esc(c) +
+'</option>'
+)
+.join("");
 
 sel.value = current;
 
 }
 
+/* ======================================================
+   SORT
+====================================================== */
+
 function sortedChannelIds(){
 
-let ids = Object.keys(channelsCache);
+let ids =
+Object.keys(channelsCache);
 
-const term = searchTerm.trim().toLowerCase();
+const term =
+searchTerm
+.trim()
+.toLowerCase();
+
 if(term){
-ids = ids.filter(id => id.toLowerCase().includes(term));
+
+ids =
+ids.filter(
+id =>
+id.toLowerCase()
+.includes(term)
+);
+
 }
 
 if(categoryFilter){
-ids = ids.filter(id => channelsCache[id].category === categoryFilter);
+
+ids =
+ids.filter(
+id =>
+channelsCache[id].category ===
+categoryFilter
+);
+
 }
 
 if(sortMode === "status"){
-ids.sort((a,b) => {
-const aA = statusCache[a]?.active ? 1 : 0;
-const bA = statusCache[b]?.active ? 1 : 0;
+
+ids.sort((a,b)=>{
+
+const aA =
+statusCache[a]?.active
+? 1
+: 0;
+
+const bA =
+statusCache[b]?.active
+? 1
+: 0;
+
 return bA - aA;
+
 });
-} else if(sortMode === "uptime"){
-ids.sort((a,b) => (statusCache[b]?.uptimeSeconds||0) - (statusCache[a]?.uptimeSeconds||0));
-} else if(sortMode === "name"){
-ids.sort((a,b) => a.localeCompare(b));
+
+}
+
+else if(sortMode === "uptime"){
+
+ids.sort(
+(a,b)=>
+(statusCache[b]?.uptimeSeconds || 0) -
+(statusCache[a]?.uptimeSeconds || 0)
+);
+
+}
+
+else if(sortMode === "name"){
+
+ids.sort(
+(a,b)=>
+a.localeCompare(b)
+);
+
 }
 
 return ids;
 
 }
 
-function onSearch(val){ searchTerm = val; render(); }
-function onCategory(val){ categoryFilter = val; render(); }
-function onSort(val){ sortMode = val; render(); }
+function onSearch(val){
+
+searchTerm = val;
+
+render();
+
+}
+
+function onCategory(val){
+
+categoryFilter = val;
+
+render();
+
+}
+
+function onSort(val){
+
+sortMode = val;
+
+render();
+
+}
+
+/* ======================================================
+   SOURCES HELPERS
+====================================================== */
+
+function getChannelSources(ch){
+
+if(
+Array.isArray(ch.sources) &&
+ch.sources.length
+){
+
+return ch.sources
+.map(s=>{
+
+if(typeof s === "string"){
+
+return {
+url:s,
+title:""
+};
+
+}
+
+return {
+url:s?.url || "",
+title:s?.title || ""
+};
+
+});
+
+}
+
+if(ch.input){
+
+return [{
+url:ch.input,
+title:"المصدر الأساسي"
+}];
+
+}
+
+return [];
+
+}
+
+function isMovieSeries(ch){
+
+const category =
+String(ch.category || "")
+.toLowerCase();
+
+return (
+category.includes("فيلم") ||
+category.includes("افلام") ||
+category.includes("أفلام") ||
+category.includes("مسلسل") ||
+category.includes("مسلسلات") ||
+category.includes("movie") ||
+category.includes("movies") ||
+category.includes("series")
+);
+
+}
+
+/* ======================================================
+   SOURCE DRAFT
+====================================================== */
+
+function initSourceDraft(id){
+
+const ch =
+channelsCache[id];
+
+let sources =
+getChannelSources(ch);
+
+sourceDraft[id] =
+sources.map(
+s => ({
+url:s.url || "",
+title:s.title || ""
+})
+);
+
+if(!sourceDraft[id].length){
+
+sourceDraft[id] = [
+{
+url:"",
+title:""
+}
+];
+
+}
+
+}
+
+function addSourceDraft(id){
+
+if(!sourceDraft[id]){
+initSourceDraft(id);
+}
+
+sourceDraft[id].push({
+url:"",
+title:""
+});
+
+render();
+
+setTimeout(()=>{
+
+const card =
+document.querySelector(
+'[data-source-card="' +
+id +
+'"]'
+);
+
+if(card){
+
+card.scrollIntoView({
+behavior:"smooth",
+block:"center"
+});
+
+}
+
+},100);
+
+}
+
+function deleteSourceDraft(id,index){
+
+if(!sourceDraft[id]) return;
+
+if(
+sourceDraft[id].length <= 1
+){
+
+if(
+!confirm(
+"هل تريد حذف الرابط الوحيد؟"
+)
+){
+
+return;
+
+}
+
+}
+
+sourceDraft[id].splice(index,1);
+
+if(!sourceDraft[id].length){
+
+sourceDraft[id] = [];
+
+}
+
+render();
+
+}
+
+function moveSource(id,index,direction){
+
+if(!sourceDraft[id]) return;
+
+const newIndex =
+index + direction;
+
+if(
+newIndex < 0 ||
+newIndex >= sourceDraft[id].length
+){
+
+return;
+
+}
+
+const tmp =
+sourceDraft[id][index];
+
+sourceDraft[id][index] =
+sourceDraft[id][newIndex];
+
+sourceDraft[id][newIndex] =
+tmp;
+
+render();
+
+}
+
+function updateSourceDraft(
+id,
+index,
+field,
+value
+){
+
+if(!sourceDraft[id]) return;
+
+if(!sourceDraft[id][index]){
+
+sourceDraft[id][index] = {
+url:"",
+title:""
+};
+
+}
+
+sourceDraft[id][index][field] =
+value;
+
+}
+
+/* ======================================================
+   SAVE SOURCES
+====================================================== */
+
+async function saveSources(id){
+
+const ch =
+channelsCache[id];
+
+const sources =
+(sourceDraft[id] || [])
+.map(s=>({
+
+url:String(s.url || "").trim(),
+
+title:String(s.title || "").trim()
+
+}))
+.filter(s=>s.url);
+
+if(!sources.length){
+
+alert(
+"يجب إضافة رابط واحد على الأقل."
+);
+
+return false;
+
+}
+
+const loop =
+document.getElementById(
+"loop_" + id
+)?.checked !== false;
+
+try{
+
+const r =
+await fetch(
+"/channel/" +
+encodeURIComponent(id) +
+"/sources",
+{
+method:"PUT",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify({
+sources,
+loopSources:loop
+})
+}
+);
+
+if(!r.ok){
+
+const txt =
+await r.text();
+
+throw new Error(txt || "فشل حفظ الروابط");
+
+}
+
+await load();
+
+return true;
+
+}catch(err){
+
+alert(
+"حدث خطأ أثناء حفظ الروابط:\\n" +
+err.message
+);
+
+return false;
+
+}
+
+}
+
+/* ======================================================
+   PLAY SOURCE
+====================================================== */
+
+async function playSource(
+id,
+index
+){
+
+try{
+
+const r =
+await fetch(
+"/source?id=" +
+encodeURIComponent(id) +
+"&index=" +
+index
+);
+
+if(!r.ok){
+
+throw new Error(
+"فشل تشغيل المصدر"
+);
+
+}
+
+await load();
+
+}catch(err){
+
+alert(err.message);
+
+}
+
+}
+
+/* ======================================================
+   NEXT SOURCE
+====================================================== */
+
+async function nextSource(id){
+
+try{
+
+const r =
+await fetch(
+"/next?id=" +
+encodeURIComponent(id)
+);
+
+if(!r.ok){
+
+throw new Error(
+"فشل الانتقال للمصدر التالي"
+);
+
+}
+
+await load();
+
+}catch(err){
+
+alert(err.message);
+
+}
+
+}
+
+/* ======================================================
+   RENDER SOURCE MANAGER
+====================================================== */
+
+function renderSourceManager(id,ch){
+
+if(!sourceDraft[id]){
+initSourceDraft(id);
+}
+
+const sources =
+sourceDraft[id];
+
+const currentIndex =
+statusCache[id]?.sourceIndex;
+
+const loopValue =
+statusCache[id]?.loopSources !== false;
+
+return \`
+
+<div
+class="sourcesBox"
+data-source-card="\${esc(id)}">
+
+<div class="sourcesHeader">
+
+<strong>
+<i class="ti ti-list-numbers"></i>
+روابط الفيلم / المسلسل
+</strong>
+
+<span class="sourceCountBadge">
+\${sources.length} رابط
+</span>
+
+</div>
+
+\${sources.length
+? sources.map((s,index)=>\`
+
+<div class="sourceItem">
+
+<div class="sourceIndex">
+\${index + 1}
+</div>
+
+<div class="sourceInputs">
+
+<input
+placeholder="عنوان الرابط — مثال: الحلقة 1"
+value="\${esc(s.title)}"
+oninput="updateSourceDraft('\${esc(id)}',\${index},'title',this.value)">
+
+<input
+placeholder="https://example.com/video.m3u8"
+value="\${esc(s.url)}"
+oninput="updateSourceDraft('\${esc(id)}',\${index},'url',this.value)">
+
+<div class="sourceTypeHint">
+
+\${currentIndex === index && statusCache[id]?.active
+? "▶ المصدر الحالي"
+: "المصدر رقم " + (index + 1)}
+
+</div>
+
+</div>
+
+<div class="sourceButtons">
+
+<button
+class="sourceBtn play"
+onclick="playSource('\${esc(id)}',\${index})"
+title="تشغيل هذا الرابط">
+
+<i class="ti ti-player-play"></i>
+
+</button>
+
+<button
+class="sourceBtn"
+onclick="moveSource('\${esc(id)}',\${index},-1)"
+title="تحريك لأعلى">
+
+<i class="ti ti-chevron-up"></i>
+
+</button>
+
+<button
+class="sourceBtn"
+onclick="moveSource('\${esc(id)}',\${index},1)"
+title="تحريك لأسفل">
+
+<i class="ti ti-chevron-down"></i>
+
+</button>
+
+<button
+class="sourceBtn danger"
+onclick="deleteSourceDraft('\${esc(id)}',\${index})"
+title="حذف">
+
+<i class="ti ti-trash"></i>
+
+</button>
+
+</div>
+
+</div>
+
+\`).join("")
+:
+'<div style="padding:10px;text-align:center;color:var(--text-3);font-size:11px">لا يوجد روابط</div>'
+}
+
+<button
+class="addSourceBtn"
+onclick="addSourceDraft('\${esc(id)}')">
+
+<i class="ti ti-plus"></i>
+
+إضافة رابط جديد
+
+</button>
+
+<div class="loopRow">
+
+<div class="loopSwitch">
+
+<input
+type="checkbox"
+id="loop_\${esc(id)}"
+\${loopValue ? "checked" : ""}>
+
+<label for="loop_\${esc(id)}">
+تكرار من أول رابط بعد آخر رابط
+</label>
+
+</div>
+
+<button
+class="iBtn nextBtn"
+onclick="nextSource('\${esc(id)}')">
+
+<i class="ti ti-player-skip-forward"></i>
+
+التالي
+
+</button>
+
+</div>
+
+<div
+style="display:flex;gap:6px;margin-top:8px">
+
+<button
+class="editActions saveBtn"
+style="flex:1;margin:0;padding:8px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-weight:600"
+onclick="saveSources('\${esc(id)}')">
+
+حفظ الروابط
+
+</button>
+
+</div>
+
+</div>
+
+\`;
+
+}
+
+/* ======================================================
+   RENDER
+====================================================== */
 
 function render(){
 
 renderStats();
+
 refreshCategoryOptions();
 
-const box = document.getElementById("list");
+const box =
+document.getElementById("list");
+
 box.innerHTML = "";
 
-const ids = sortedChannelIds();
+const ids =
+sortedChannelIds();
 
 for(const id of ids){
 
-const isOn = !!statusCache[id]?.active;
-const uptimeSeconds = statusCache[id]?.uptimeSeconds || 0;
-const totalSeconds = statusCache[id]?.totalSeconds || 0;
-const bitrateKbps = statusCache[id]?.bitrateKbps;
-const currentViewers = statusCache[id]?.currentViewers || 0;
-const totalViewers = statusCache[id]?.totalViewers || 0;
-const ch = channelsCache[id];
-const logoUrl = ch.logo || "";
-const category = ch.category || "";
-const qualityLabel = { high: "1080p", medium: "720p", low: "480p" }[ch.quality] || "1080p";
+const isOn =
+!!statusCache[id]?.active;
+
+const uptimeSeconds =
+statusCache[id]?.uptimeSeconds || 0;
+
+const totalSeconds =
+statusCache[id]?.totalSeconds || 0;
+
+const bitrateKbps =
+statusCache[id]?.bitrateKbps;
+
+const currentViewers =
+statusCache[id]?.currentViewers || 0;
+
+const totalViewers =
+statusCache[id]?.totalViewers || 0;
+
+const ch =
+channelsCache[id];
+
+const logoUrl =
+ch.logo || "";
+
+const category =
+ch.category || "";
+
+const qualityLabel =
+{
+high:"1080p",
+medium:"720p",
+low:"480p"
+}[ch.quality] ||
+"1080p";
+
+const sources =
+getChannelSources(ch);
+
+const multi =
+sources.length > 1;
 
 box.innerHTML += \`
+
 <div class="card">
 
 <div class="cardHead">
-<div class="logoBox">\${logoUrl ? '<img src="'+logoUrl+'" onerror="imgFallback(this)">' : '<i class="ti ti-device-tv"></i>'}</div>
+
+<div class="logoBox">
+
+\${logoUrl
+? '<img src="' +
+esc(logoUrl) +
+'" onerror="imgFallback(this)">'
+: '<i class="ti ti-device-tv"></i>'}
+
+</div>
+
 <div class="titleWrap">
-<h3>\${id}</h3>
-\${category ? '<span class="catTag">'+category+'</span>' : ''}
-<span class="catTag mono" style="margin-right:6px">\${qualityLabel}</span>
-</div>
-<div class="statusPill \${isOn ? 'on' : 'off'}"><i class="ti ti-point-filled"></i>\${isOn ? 'شغالة' : 'متوقفة'}</div>
+
+<h3>
+\${esc(id)}
+</h3>
+
+\${category
+? '<span class="catTag">' +
+esc(category) +
+'</span>'
+: ''}
+
+<span
+class="catTag mono"
+style="margin-right:6px">
+
+\${qualityLabel}
+
+</span>
+
+\${multi
+? '<div class="multiBadge"><i class="ti ti-list-numbers"></i>' +
+sources.length +
+' روابط</div>'
+: ''}
+
 </div>
 
-\${ editingId === id ? \`
+<div
+class="statusPill \${isOn ? "on" : "off"}">
+
+<i class="ti ti-point-filled"></i>
+
+\${isOn
+? "شغالة"
+: "متوقفة"}
+
+</div>
+
+</div>
+
+\${editingId === id ? \`
 
 <div class="editField">
-<div class="tLbl">INPUT URL</div>
-<input value="\${(editDraft[id]?.input ?? ch.input ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','input',this.value)">
+
+<div class="tLbl">
+INPUT URL
+</div>
+
+<input
+value="\${esc(
+editDraft[id]?.input ??
+ch.input ??
+""
+)}"
+oninput="updateDraft('\${esc(id)}','input',this.value)">
+
 </div>
 
 <div class="editField">
-<div class="tLbl">RTMP OUTPUT</div>
-<input value="\${(editDraft[id]?.output ?? ch.output ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','output',this.value)">
+
+<div class="tLbl">
+RTMP OUTPUT
+</div>
+
+<input
+value="\${esc(
+editDraft[id]?.output ??
+ch.output ??
+""
+)}"
+oninput="updateDraft('\${esc(id)}','output',this.value)">
+
 </div>
 
 <div class="editField">
-<div class="tLbl">LOGO URL</div>
-<input value="\${(editDraft[id]?.logo ?? ch.logo ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','logo',this.value)">
+
+<div class="tLbl">
+LOGO URL
+</div>
+
+<input
+value="\${esc(
+editDraft[id]?.logo ??
+ch.logo ??
+""
+)}"
+oninput="updateDraft('\${esc(id)}','logo',this.value)">
+
 </div>
 
 <div class="editField">
-<div class="tLbl">CATEGORY</div>
-<input value="\${(editDraft[id]?.category ?? ch.category ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','category',this.value)">
+
+<div class="tLbl">
+CATEGORY
+</div>
+
+<input
+value="\${esc(
+editDraft[id]?.category ??
+ch.category ??
+""
+)}"
+oninput="updateDraft('\${esc(id)}','category',this.value)">
+
 </div>
 
 <div class="editField">
-<div class="tLbl">رابط المشاهدة الأصلي (WATCH URL)</div>
-<input value="\${(editDraft[id]?.watchUrl ?? ch.watchUrl ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','watchUrl',this.value)">
+
+<div class="tLbl">
+WATCH URL
+</div>
+
+<input
+value="\${esc(
+editDraft[id]?.watchUrl ??
+ch.watchUrl ??
+""
+)}"
+oninput="updateDraft('\${esc(id)}','watchUrl',this.value)">
+
 </div>
 
 <div class="editField">
-<div class="tLbl">جودة البث (QUALITY)</div>
-<select onchange="updateDraft('\${id}','quality',this.value)">
-<option value="high" \${(editDraft[id]?.quality ?? ch.quality ?? 'high') === 'high' ? 'selected' : ''}>عالية — 1080p</option>
-<option value="medium" \${(editDraft[id]?.quality ?? ch.quality) === 'medium' ? 'selected' : ''}>متوسطة — 720p</option>
-<option value="low" \${(editDraft[id]?.quality ?? ch.quality) === 'low' ? 'selected' : ''}>منخفضة — 480p</option>
+
+<div class="tLbl">
+QUALITY
+</div>
+
+<select
+onchange="updateDraft('\${esc(id)}','quality',this.value)">
+
+<option
+value="high"
+\${(
+editDraft[id]?.quality ??
+ch.quality ??
+"high"
+) === "high"
+? "selected"
+: ""}>
+
+عالية — 1080p
+
+</option>
+
+<option
+value="medium"
+\${(
+editDraft[id]?.quality ??
+ch.quality
+) === "medium"
+? "selected"
+: ""}>
+
+متوسطة — 720p
+
+</option>
+
+<option
+value="low"
+\${(
+editDraft[id]?.quality ??
+ch.quality
+) === "low"
+? "selected"
+: ""}>
+
+منخفضة — 480p
+
+</option>
+
 </select>
+
 </div>
+
+\${isMovieSeries(ch)
+? renderSourceManager(id,ch)
+: ""}
 
 <div class="editActions">
-<button class="saveBtn" onclick="saveEdit('\${id}')">حفظ</button>
-<button class="cancelBtn" onclick="cancelEdit()">إلغاء</button>
+
+<button
+class="saveBtn"
+onclick="saveEdit('\${esc(id)}')">
+
+حفظ بيانات القناة
+
+</button>
+
+<button
+class="cancelBtn"
+onclick="cancelEdit()">
+
+إلغاء
+
+</button>
+
 </div>
 
-\` : \`
+\`
+
+:
+
+\`
 
 <div class="readoutRow">
+
 <div class="readoutBox">
-<div class="rLbl">مشاهدين الآن</div>
-<div class="rVal">\${ch.watchUrl ? currentViewers : '—'}</div>
+
+<div class="rLbl">
+مشاهدين الآن
 </div>
+
+<div class="rVal">
+
+\${ch.watchUrl
+? currentViewers
+: "—"}
+
+</div>
+
+</div>
+
 <div class="readoutBox">
-<div class="rLbl">إجمالي المشاهدين</div>
-<div class="rVal">\${ch.watchUrl ? totalViewers : '—'}</div>
-</div>
+
+<div class="rLbl">
+إجمالي المشاهدين
 </div>
 
-\${ ch.watchUrl ? \`
-<div class="techLine">
-<div class="tLbl">رابط المشاهدة (شارك ده مع الجمهور)</div>
-<span class="tVal" style="color:var(--accent);cursor:pointer" title="اضغط للنسخ" onclick="copyWatchLink('\${id}')">\${window.location.origin}/watch/\${id}.m3u8</span>
-</div>
-\` : \`
-<div class="techLine">
-<span class="tVal" style="color:var(--text-3)">مفيش رابط مشاهدة مضاف — اضغط تعديل لإضافته</span>
-</div>
-\` }
+<div class="rVal">
 
-<div class="techLine">
-<div class="tLbl">مدة البث الحالية · إجمالي وقت البث</div>
-<span class="tVal">\${isOn ? formatDuration(uptimeSeconds) : '—'} · \${formatDuration(totalSeconds)}</span>
+\${ch.watchUrl
+? totalViewers
+: "—"}
+
 </div>
 
+</div>
+
+</div>
+
+\${ch.watchUrl
+
+? \`
+
 <div class="techLine">
-<div class="tLbl">BITRATE</div>
-<span class="tVal">\${bitrateKbps ? bitrateKbps + ' kbps' : '—'}</span>
+
+<div class="tLbl">
+رابط المشاهدة
+</div>
+
+<span
+class="tVal"
+style="color:var(--accent);cursor:pointer"
+title="اضغط للنسخ"
+onclick="copyWatchLink('\${esc(id)}')">
+
+\${esc(window.location.origin)}
+/watch/\${esc(id)}.m3u8
+
+</span>
+
+</div>
+
+\`
+
+:
+
+\`
+
+<div class="techLine">
+
+<span
+class="tVal"
+style="color:var(--text-3)">
+
+مفيش رابط مشاهدة مضاف
+
+</span>
+
+</div>
+
+\`}
+
+<div class="techLine">
+
+<div class="tLbl">
+مدة البث الحالية · إجمالي وقت البث
+</div>
+
+<span class="tVal">
+
+\${isOn
+? formatDuration(uptimeSeconds)
+: "—"}
+
+ ·
+
+\${formatDuration(totalSeconds)}
+
+</span>
+
 </div>
 
 <div class="techLine">
-<div class="tLbl">INPUT</div>
-<span class="tVal" title="\${ch.input || ''}">\${ch.input || '—'}</span>
+
+<div class="tLbl">
+BITRATE
+</div>
+
+<span class="tVal">
+
+\${bitrateKbps
+? bitrateKbps + " kbps"
+: "—"}
+
+</span>
+
+</div>
+
+\${multi
+? \`
+
+<div class="techLine">
+
+<div class="tLbl">
+المصدر الحالي
+</div>
+
+<span
+class="tVal"
+style="color:var(--accent)">
+
+\${statusCache[id]?.sourceNumber || 1}
+/
+\${statusCache[id]?.sourceCount || sources.length}
+
+\${statusCache[id]?.sourceTitle
+? " — " +
+esc(statusCache[id].sourceTitle)
+: ""}
+
+</span>
+
+</div>
+
+<div
+style="display:flex;gap:6px;margin-top:8px">
+
+<button
+class="iBtn nextBtn"
+onclick="nextSource('\${esc(id)}')">
+
+<i class="ti ti-player-skip-forward"></i>
+
+الرابط التالي
+
+</button>
+
+</div>
+
+\`
+: ""}
+
+<div class="techLine">
+
+<div class="tLbl">
+INPUT
+</div>
+
+<span
+class="tVal"
+title="\${esc(ch.input || "")}">
+
+\${esc(ch.input || "—")}
+
+</span>
+
 </div>
 
 <div class="techLine">
-<div class="tLbl">OUTPUT</div>
-<span class="tVal" title="\${ch.output || ''}">\${ch.output || '—'}</span>
+
+<div class="tLbl">
+OUTPUT
+</div>
+
+<span
+class="tVal"
+title="\${esc(ch.output || "")}">
+
+\${esc(ch.output || "—")}
+
+</span>
+
 </div>
 
 <div class="btnRow">
-<button class="iBtn go" onclick="start('\${id}')" title="تشغيل"><i class="ti ti-player-play"></i></button>
-<button class="iBtn stop" onclick="stop('\${id}')" title="إيقاف"><i class="ti ti-player-stop"></i></button>
-<button class="iBtn" onclick="editChannel('\${id}')" title="تعديل"><i class="ti ti-edit"></i></button>
-<button class="iBtn" onclick="showLogs('\${id}')" title="اللوج"><i class="ti ti-file-text"></i></button>
-<button class="iBtn" onclick="del('\${id}')" title="حذف"><i class="ti ti-trash"></i></button>
+
+<button
+class="iBtn go"
+onclick="start('\${esc(id)}')"
+title="تشغيل">
+
+<i class="ti ti-player-play"></i>
+
+</button>
+
+<button
+class="iBtn stop"
+onclick="stop('\${esc(id)}')"
+title="إيقاف">
+
+<i class="ti ti-player-stop"></i>
+
+</button>
+
+<button
+class="iBtn"
+onclick="editChannel('\${esc(id)}')"
+title="تعديل">
+
+<i class="ti ti-edit"></i>
+
+</button>
+
+<button
+class="iBtn"
+onclick="showLogs('\${esc(id)}')"
+title="اللوج">
+
+<i class="ti ti-file-text"></i>
+
+</button>
+
+<button
+class="iBtn"
+onclick="del('\${esc(id)}')"
+title="حذف">
+
+<i class="ti ti-trash"></i>
+
+</button>
+
 </div>
 
-\` }
+\`
+
+}
 
 </div>
+
 \`;
 
 }
 
 if(ids.length === 0){
-box.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-3)">لا يوجد قنوات مطابقة</div>';
+
+box.innerHTML =
+'<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-3)">لا يوجد قنوات مطابقة</div>';
+
 }
 
 }
+
+/* ======================================================
+   LOAD CHANNELS
+====================================================== */
 
 async function load(){
-const ch = await fetch("/channels");
-channelsCache = await ch.json();
 
-const st = await fetch("/status");
-statusCache = await st.json();
+try{
+
+const ch =
+await fetch("/channels");
+
+channelsCache =
+await ch.json();
+
+const st =
+await fetch("/status");
+
+statusCache =
+await st.json();
 
 render();
+
+}catch(err){
+
+console.error(err);
+
 }
+
+}
+
+/* ======================================================
+   LOAD EVENTS
+====================================================== */
 
 async function loadEvents(){
-const r = await fetch("/events");
-eventsCache = await r.json();
+
+try{
+
+const r =
+await fetch("/events");
+
+eventsCache =
+await r.json();
+
 renderEvents();
+
 renderStats();
+
+}catch(err){
+
+console.error(err);
+
 }
 
-function eventMeta(type){
-if(type === "start") return { icon:"ti-player-play", cls:"on", text:"تشغيل" };
-if(type === "stop") return { icon:"ti-player-stop", cls:"off", text:"إيقاف" };
-if(type === "exit") return { icon:"ti-alert-triangle", cls:"off", text:"خروج غير متوقع" };
-if(type === "restart") return { icon:"ti-refresh", cls:"warn", text:"إعادة تشغيل" };
-return { icon:"ti-point", cls:"", text:type };
 }
+
+/* ======================================================
+   EVENT META
+====================================================== */
+
+function eventMeta(type){
+
+if(type === "start")
+return {
+icon:"ti-player-play",
+cls:"on",
+text:"تشغيل"
+};
+
+if(type === "stop")
+return {
+icon:"ti-player-stop",
+cls:"off",
+text:"إيقاف"
+};
+
+if(type === "exit")
+return {
+icon:"ti-alert-triangle",
+cls:"off",
+text:"خروج غير متوقع"
+};
+
+if(type === "restart")
+return {
+icon:"ti-refresh",
+cls:"warn",
+text:"إعادة تشغيل"
+};
+
+return {
+icon:"ti-point",
+cls:"",
+text:type
+};
+
+}
+
+/* ======================================================
+   EVENTS RENDER
+====================================================== */
 
 function renderEvents(){
 
-const box = document.getElementById("eventsList");
+const box =
+document.getElementById(
+"eventsList"
+);
+
 if(!box) return;
 
 if(eventsCache.length === 0){
-box.innerHTML = '<div class="evRow" style="color:var(--text-3)">لا يوجد أحداث بعد</div>';
+
+box.innerHTML =
+'<div class="evRow" style="color:var(--text-3)">لا يوجد أحداث بعد</div>';
+
 return;
+
 }
 
 box.innerHTML = "";
 
 for(const ev of eventsCache){
 
-const m = eventMeta(ev.type);
-const t = new Date(ev.time);
-const timeStr = t.toLocaleString("ar-EG");
+const m =
+eventMeta(ev.type);
+
+const t =
+new Date(ev.time);
+
+const timeStr =
+t.toLocaleString("ar-EG");
 
 box.innerHTML += \`
+
 <div class="evRow">
-<div class="evIcon \${m.cls}"><i class="ti \${m.icon}"></i></div>
+
+<div class="evIcon \${m.cls}">
+
+<i class="ti \${m.icon}"></i>
+
+</div>
+
 <div class="evBody">
-<div class="evTitle"><span class="mono">\${ev.id}</span> — \${m.text}</div>
-<div class="evMsg">\${ev.message}</div>
+
+<div class="evTitle">
+
+<span class="mono">
+\${esc(ev.id)}
+</span>
+
+—
+
+\${esc(m.text)}
+
 </div>
-<div class="evTime">\${timeStr}</div>
+
+<div class="evMsg">
+
+\${esc(ev.message)}
+
 </div>
+
+</div>
+
+<div class="evTime">
+
+\${timeStr}
+
+</div>
+
+</div>
+
 \`;
 
 }
 
 }
 
+/* ======================================================
+   LOGS
+====================================================== */
+
 let currentLogChannel = null;
 
 async function showLogs(id){
+
 currentLogChannel = id;
-document.getElementById("logTitle").innerText = "لوج القناة: " + id;
-document.getElementById("logOverlay").classList.add("show");
+
+document
+.getElementById("logTitle")
+.innerText =
+"لوج القناة: " + id;
+
+document
+.getElementById("logOverlay")
+.classList.add("show");
+
 await refreshLogs();
+
 }
 
 function closeLogs(e){
-if(e && e.target !== document.getElementById("logOverlay")) return;
-document.getElementById("logOverlay").classList.remove("show");
+
+if(
+e &&
+e.target !==
+document.getElementById("logOverlay")
+){
+
+return;
+
+}
+
+document
+.getElementById("logOverlay")
+.classList.remove("show");
+
 currentLogChannel = null;
+
 }
 
 async function refreshLogs(){
-if(!currentLogChannel) return;
 
-const r = await fetch("/logs/" + currentLogChannel);
-const lines = await r.json();
+if(!currentLogChannel)
+return;
 
-const body = document.getElementById("logBody");
+const r =
+await fetch(
+"/logs/" +
+encodeURIComponent(currentLogChannel)
+);
+
+const lines =
+await r.json();
+
+const body =
+document.getElementById(
+"logBody"
+);
 
 if(lines.length === 0){
-body.innerHTML = '<div class="logLine">لا يوجد سجل بعد لهذه القناة.</div>';
+
+body.innerHTML =
+'<div class="logLine">لا يوجد سجل بعد لهذه القناة.</div>';
+
 return;
+
 }
 
-body.innerHTML = lines.map(l => {
-const t = new Date(l.time).toLocaleTimeString("en-GB");
-return '<div class="logLine"><span class="logTime">[' + t + ']</span>' + l.line.replace(/</g,"&lt;") + '</div>';
+body.innerHTML =
+lines.map(l=>{
+
+const t =
+new Date(l.time)
+.toLocaleTimeString("en-GB");
+
+return '<div class="logLine">' +
+'<span class="logTime">[' +
+t +
+']</span>' +
+esc(l.line) +
+'</div>';
+
 }).join("");
 
-body.scrollTop = body.scrollHeight;
+body.scrollTop =
+body.scrollHeight;
+
 }
 
+/* ======================================================
+   START / STOP
+====================================================== */
+
 async function startAll(){
-if(!confirm("تشغيل كل القنوات؟")) return;
+
+if(!confirm(
+"تشغيل كل القنوات؟"
+)) return;
+
 await fetch("/start-all");
+
 load();
+
 }
 
 async function stopAll(){
-if(!confirm("إيقاف كل القنوات؟")) return;
+
+if(!confirm(
+"إيقاف كل القنوات؟"
+)) return;
+
 await fetch("/stop-all");
+
 load();
+
 }
 
 let ws;
 let wsReconnectTimer;
 
+/* ======================================================
+   WEBSOCKET
+====================================================== */
+
 function connectWS(){
-const proto = location.protocol === "https:" ? "wss:" : "ws:";
-ws = new WebSocket(proto + "//" + location.host);
 
-ws.onopen = () => {
-document.getElementById("connStatus").className = "pill conn-ok";
-document.getElementById("connStatus").innerHTML = '<i class="ti ti-plug-connected"></i>متصل مباشر';
+const proto =
+location.protocol === "https:"
+? "wss:"
+: "ws:";
+
+ws =
+new WebSocket(
+proto +
+"//" +
+location.host
+);
+
+ws.onopen = ()=>{
+
+document
+.getElementById("connStatus")
+.className =
+"pill conn-ok";
+
+document
+.getElementById("connStatus")
+.innerHTML =
+'<i class="ti ti-plug-connected"></i>متصل مباشر';
+
 };
 
-ws.onclose = () => {
-document.getElementById("connStatus").className = "pill conn-bad";
-document.getElementById("connStatus").innerHTML = '<i class="ti ti-plug-connected-x"></i>منقطع - إعادة محاولة...';
-clearTimeout(wsReconnectTimer);
-wsReconnectTimer = setTimeout(connectWS, 3000);
+ws.onclose = ()=>{
+
+document
+.getElementById("connStatus")
+.className =
+"pill conn-bad";
+
+document
+.getElementById("connStatus")
+.innerHTML =
+'<i class="ti ti-plug-connected-x"></i>منقطع - إعادة محاولة...';
+
+clearTimeout(
+wsReconnectTimer
+);
+
+wsReconnectTimer =
+setTimeout(
+connectWS,
+3000
+);
+
 };
 
-ws.onerror = () => ws.close();
+ws.onerror = () =>
+ws.close();
 
-ws.onmessage = (msg) => {
+ws.onmessage = msg=>{
+
 try{
-const parsed = JSON.parse(msg.data);
+
+const parsed =
+JSON.parse(msg.data);
 
 if(parsed.type === "status"){
-statusCache = parsed.data;
-if(!editingId) render();
-} else if(parsed.type === "event"){
-eventsCache.unshift(parsed.data);
-if(eventsCache.length > 200) eventsCache.pop();
+
+statusCache =
+parsed.data;
+
+if(!editingId){
+
+render();
+
+}
+
+}
+
+else if(parsed.type === "event"){
+
+eventsCache.unshift(
+parsed.data
+);
+
+if(eventsCache.length > 200){
+
+eventsCache.pop();
+
+}
+
 renderEvents();
+
 renderStats();
+
 }
 
 }catch(e){}
+
 };
+
 }
+
+/* ======================================================
+   START CHANNEL
+====================================================== */
 
 async function start(id){
-await fetch("/start?id="+id);
-load();
+
+await fetch(
+"/start?id=" +
+encodeURIComponent(id)
+);
+
+await load();
+
 }
 
+/* ======================================================
+   STOP CHANNEL
+====================================================== */
+
 async function stop(id){
-await fetch("/stop?id="+id);
-load();
+
+await fetch(
+"/stop?id=" +
+encodeURIComponent(id)
+);
+
+await load();
+
 }
+
+/* ======================================================
+   ADD CHANNEL
+====================================================== */
 
 async function addChannel(){
 
-const id = document.getElementById("f_id").value.trim();
-const input = document.getElementById("f_input").value.trim();
-const output = document.getElementById("f_output").value.trim();
-const logo = document.getElementById("f_logo").value.trim();
-const category = document.getElementById("f_category").value.trim();
-const watchUrl = document.getElementById("f_watchUrl").value.trim();
-const quality = document.getElementById("f_quality").value;
+const id =
+document
+.getElementById("f_id")
+.value
+.trim();
+
+const input =
+document
+.getElementById("f_input")
+.value
+.trim();
+
+const output =
+document
+.getElementById("f_output")
+.value
+.trim();
+
+const logo =
+document
+.getElementById("f_logo")
+.value
+.trim();
+
+const category =
+document
+.getElementById("f_category")
+.value
+.trim();
+
+const watchUrl =
+document
+.getElementById("f_watchUrl")
+.value
+.trim();
+
+const quality =
+document
+.getElementById("f_quality")
+.value;
 
 if(!id || !input || !output){
-alert("من فضلك املأ معرف القناة، رابط البث، ورابط الإخراج على الأقل");
+
+alert(
+"من فضلك املأ معرف القناة، رابط البث، ورابط الإخراج على الأقل"
+);
+
 return;
+
 }
 
-await fetch("/channel",{
+try{
+
+const r =
+await fetch(
+"/channel",
+{
 method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality })
-});
 
-document.getElementById("f_id").value = "";
-document.getElementById("f_input").value = "";
-document.getElementById("f_output").value = "";
-document.getElementById("f_logo").value = "";
-document.getElementById("f_category").value = "";
-document.getElementById("f_watchUrl").value = "";
-document.getElementById("f_quality").value = "high";
+headers:{
+"Content-Type":
+"application/json"
+},
 
-load();
-show("channels");
+body:JSON.stringify({
+
+id,
+input,
+output,
+logo,
+category,
+watchUrl,
+quality,
+
+// أول رابط تلقائيًا
+sources:[
+{
+url:input,
+title:"المصدر الأساسي"
 }
+],
+
+loopSources:true
+
+})
+}
+);
+
+if(!r.ok){
+
+const txt =
+await r.text();
+
+throw new Error(
+txt ||
+"فشل إضافة القناة"
+);
+
+}
+
+document
+.getElementById("f_id")
+.value = "";
+
+document
+.getElementById("f_input")
+.value = "";
+
+document
+.getElementById("f_output")
+.value = "";
+
+document
+.getElementById("f_logo")
+.value = "";
+
+document
+.getElementById("f_category")
+.value = "";
+
+document
+.getElementById("f_watchUrl")
+.value = "";
+
+document
+.getElementById("f_quality")
+.value = "high";
+
+await load();
+
+show("channels");
+
+}catch(err){
+
+alert(
+"حدث خطأ:\\n" +
+err.message
+);
+
+}
+
+}
+
+/* ======================================================
+   DELETE
+====================================================== */
 
 async function del(id){
-if(!confirm("حذف القناة " + id + "؟")) return;
-await fetch("/channel/"+id,{ method:"DELETE" });
-load();
+
+if(!confirm(
+"حذف القناة " +
+id +
+"؟"
+)) return;
+
+await fetch(
+"/channel/" +
+encodeURIComponent(id),
+{
+method:"DELETE"
 }
+);
+
+await load();
+
+}
+
+/* ======================================================
+   EDIT CHANNEL
+====================================================== */
 
 function editChannel(id){
+
+const ch =
+channelsCache[id];
+
 editDraft[id] = {
-input: channelsCache[id].input || "",
-output: channelsCache[id].output || "",
-logo: channelsCache[id].logo || "",
-category: channelsCache[id].category || "",
-watchUrl: channelsCache[id].watchUrl || ""
+
+input:
+ch.input || "",
+
+output:
+ch.output || "",
+
+logo:
+ch.logo || "",
+
+category:
+ch.category || "",
+
+watchUrl:
+ch.watchUrl || "",
+
+quality:
+ch.quality || "high"
+
 };
+
+initSourceDraft(id);
+
 editingId = id;
+
 render();
+
 }
+
+/* ======================================================
+   SAVE CHANNEL
+====================================================== */
 
 async function saveEdit(id){
-const draft = editDraft[id] || {};
 
-await fetch("/channel/"+id,{
+const draft =
+editDraft[id] || {};
+
+try{
+
+const r =
+await fetch(
+"/channel/" +
+encodeURIComponent(id),
+{
 method:"PUT",
-headers:{ "Content-Type":"application/json" },
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
 body:JSON.stringify({
-input: draft.input ?? channelsCache[id].input,
-output: draft.output ?? channelsCache[id].output,
-logo: draft.logo ?? "",
-category: draft.category ?? "",
-watchUrl: draft.watchUrl ?? "",
-quality: draft.quality ?? channelsCache[id].quality ?? "high"
+
+input:
+draft.input ??
+channelsCache[id].input,
+
+output:
+draft.output ??
+channelsCache[id].output,
+
+logo:
+draft.logo ?? "",
+
+category:
+draft.category ?? "",
+
+watchUrl:
+draft.watchUrl ?? "",
+
+quality:
+draft.quality ??
+channelsCache[id].quality ??
+"high"
+
 })
-});
+}
+);
+
+if(!r.ok){
+
+const txt =
+await r.text();
+
+throw new Error(
+txt ||
+"فشل حفظ بيانات القناة"
+);
+
+}
+
+/*
+   حفظ المصادر فقط للأفلام والمسلسلات
+*/
+
+if(
+isMovieSeries(
+channelsCache[id]
+)
+){
+
+const saved =
+await saveSources(id);
+
+if(!saved){
+
+return;
+
+}
+
+}
 
 editingId = null;
+
 delete editDraft[id];
+
+delete sourceDraft[id];
+
 await load();
+
+}catch(err){
+
+alert(
+"حدث خطأ أثناء الحفظ:\\n" +
+err.message
+);
+
 }
+
+}
+
+/* ======================================================
+   CANCEL
+====================================================== */
 
 function cancelEdit(){
-if(editingId) delete editDraft[editingId];
-editingId = null;
-render();
+
+if(editingId){
+
+delete editDraft[
+editingId
+];
+
+delete sourceDraft[
+editingId
+];
+
 }
 
+editingId = null;
+
+render();
+
+}
+
+/* ======================================================
+   INITIAL
+====================================================== */
+
 load();
+
 loadEvents();
+
 connectWS();
 
 setInterval(()=>{
-if((!ws || ws.readyState !== 1) && !editingId) load();
-}, 5000);
+
+if(
+(!ws ||
+ws.readyState !== 1) &&
+!editingId
+){
+
+load();
+
+}
+
+},5000);
 
 </script>
 
 </body>
+
 </html>
 `;
 
-  res.send(html);
+res.send(html);
 
 });
-
-// ======================
-// 🚀 SERVER START (مرة واحدة فقط)
-// ======================
-const port = process.env.PORT || 3000;
-
-const server = app.listen(port, () => {
-  console.log("🚀 IPTV PRO RUNNING ON PORT", port);
-});
-
-// ===============================
-// 📡 WebSocket server (متصل بنفس الـ HTTP server)
-// ===============================
-const wss = new WebSocketServer({ server });
-
-wss.on("connection", (ws) => {
-  clients.push(ws);
-
-  ws.on("close", () => {
-    clients = clients.filter(c => c !== ws);
-  });
-
-  ws.on("error", () => {
-    clients = clients.filter(c => c !== ws);
-  });
-});
-
-// بث دوري لحالة القنوات لكل المتصلين
-function broadcast() {
-  const data = {};
-
-  for (const id in channels) {
-    const active = !!ffmpegProcesses[id];
-    const currentSessionMs = active && liveSince[id] ? (Date.now() - liveSince[id]) : 0;
-
-    data[id] = {
-      active,
-      uptimeSeconds: Math.floor(currentSessionMs / 1000),
-      totalSeconds: Math.floor(((totalOnairMs[id] || 0) + currentSessionMs) / 1000),
-      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null,
-      currentViewers: currentViewerLog[id] ? currentViewerLog[id].size : 0,
-      totalViewers: totalViewerSet[id] ? totalViewerSet[id].size : 0
-    };
-  }
-
-  const payload = JSON.stringify({ type: "status", data });
-
-  clients.forEach(ws => {
-    if (ws.readyState === 1) {
-      ws.send(payload);
-    }
-  });
-}
-
-// بث فوري لحدث جديد (تشغيل/إيقاف/خروج/إعادة تشغيل) لكل المتصلين
-function broadcastEvent(entry) {
-  const payload = JSON.stringify({ type: "event", data: entry });
-
-  clients.forEach(ws => {
-    if (ws.readyState === 1) {
-      ws.send(payload);
-    }
-  });
-}
-
-setInterval(broadcast, 2000);
