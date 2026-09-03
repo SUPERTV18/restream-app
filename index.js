@@ -221,7 +221,7 @@ const channels = {
 
   chyt1: {
     input: "https://www.youtube.com/live/7DHNbnPMNiM?si=Ypmmu60JMR9OtlNa",
-    output: "",
+    output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
     logo: "",
     category: "",
     watchUrl: "",
