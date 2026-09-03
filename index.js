@@ -8,43 +8,73 @@ const execFileAsync = promisify(execFile);
 const app = express();
 app.use(express.json());
 
-// ======================
+app.set("trust proxy", 1);
+
+// ======================================================
 // 🎯 STATE
-// ======================
+// ======================================================
+
 let ffmpegProcesses = {};
 
-// تتبع هل القناة اتوقفت يدويًا (لمنع إعادة التشغيل التلقائي في الحالة دي)
 let manuallyStopped = {};
 
-// آخر سطور ffmpeg لكل قناة (لعرضها في اللوحة)
 let ffmpegLogs = {};
 const MAX_LOG_LINES = 300;
 
+let liveSince = {};
+let totalOnairMs = {};
+let lastBitrateKbps = {};
+
+let currentViewerLog = {};
+let totalViewerSet = {};
+
+const VIEWER_WINDOW_MS = 20000;
+
+// ======================================================
+// 🎬 MULTI SOURCE STATE
+// ======================================================
+
+// المصدر الحالي لكل قناة
+let currentSourceIndex = {};
+
+// عنوان المصدر الحالي
+let currentSourceTitle = {};
+
+// عدد محاولات المصدر الحالي
+let sourceRetryCount = {};
+
+// لمنع process قديم من التأثير على process جديد
+let streamGeneration = {};
+
+// عدد محاولات الخطأ قبل الانتقال للمصدر التالي
+const MAX_SOURCE_RETRIES = 2;
+
+// ======================================================
+// 📝 LOGS
+// ======================================================
+
 function pushLog(id, line) {
-  if (!ffmpegLogs[id]) ffmpegLogs[id] = [];
-  ffmpegLogs[id].push({ line, time: new Date().toISOString() });
+  if (!ffmpegLogs[id]) {
+    ffmpegLogs[id] = [];
+  }
+
+  ffmpegLogs[id].push({
+    line,
+    time: new Date().toISOString()
+  });
+
   if (ffmpegLogs[id].length > MAX_LOG_LINES) {
     ffmpegLogs[id] = ffmpegLogs[id].slice(-MAX_LOG_LINES);
   }
 }
 
-// ======================
-// 📊 مقاييس حقيقية (وقت بث فعلي + بت ريت فعلي من ffmpeg)
-// ======================
-let liveSince = {};       // id -> timestamp بداية الجلسة الحالية (لو شغالة)
-let totalOnairMs = {};    // id -> إجمالي وقت البث التراكمي بالميلي ثانية
-let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من ffmpeg
+// ======================================================
+// 👁️ VIEWERS CLEANUP
+// ======================================================
 
-// ======================
-// 👁️ مشاهدين حقيقيين (مبنيين على طلبات فعلية وصلت لسيرفرنا عن طريق /watch/:id)
-// ======================
-let currentViewerLog = {}; // id -> Map(ip -> آخر وقت طلب)
-let totalViewerSet = {};   // id -> Set(كل الـ IPs اللي طلبت أي وقت)
-const VIEWER_WINDOW_MS = 20000; // أي IP ماطلبش خلال آخر 20 ثانية بيتشال من "الحالي"
-
-// تنظيف دوري لقائمة المشاهدين الحاليين
 setInterval(() => {
   const now = Date.now();
+
   for (const id in currentViewerLog) {
     for (const [ip, lastSeen] of currentViewerLog[id]) {
       if (now - lastSeen > VIEWER_WINDOW_MS) {
@@ -54,17 +84,118 @@ setInterval(() => {
   }
 }, 5000);
 
-// عملاء الـ WebSocket المتصلين بالداشبورد
+// ======================================================
+// 🔌 WEBSOCKET
+// ======================================================
+
 let clients = [];
 
-// سجل الأحداث (آخر 200 حدث فقط)
 let eventLog = [];
 const MAX_EVENTS = 200;
+
+function broadcastEvent(entry) {
+  const message = JSON.stringify({
+    type: "event",
+    data: entry
+  });
+
+  clients = clients.filter(ws => {
+    try {
+      if (ws.readyState === 1) {
+        ws.send(message);
+        return true;
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function broadcastStatus() {
+  const result = {};
+
+  for (const id in channels) {
+    const active = !!ffmpegProcesses[id];
+
+    const currentSessionMs =
+      active && liveSince[id]
+        ? Date.now() - liveSince[id]
+        : 0;
+
+    result[id] = {
+      active,
+
+      uptimeSeconds: Math.floor(
+        currentSessionMs / 1000
+      ),
+
+      totalSeconds: Math.floor(
+        ((totalOnairMs[id] || 0) + currentSessionMs) / 1000
+      ),
+
+      bitrateKbps: active
+        ? (lastBitrateKbps[id] || null)
+        : null,
+
+      currentViewers:
+        currentViewerLog[id]
+          ? currentViewerLog[id].size
+          : 0,
+
+      totalViewers:
+        totalViewerSet[id]
+          ? totalViewerSet[id].size
+          : 0,
+
+      // ==================================================
+      // 🎬 MULTI SOURCE
+      // ==================================================
+
+      sourceIndex:
+        Array.isArray(channels[id]?.sources)
+          ? (currentSourceIndex[id] ?? 0)
+          : null,
+
+      sourceTitle:
+        currentSourceTitle[id] || null,
+
+      sourceCount:
+        Array.isArray(channels[id]?.sources)
+          ? channels[id].sources.length
+          : channels[id]?.input
+            ? 1
+            : 0,
+
+      loopSources:
+        !!channels[id]?.loopSources
+    };
+  }
+
+  const message = JSON.stringify({
+    type: "status",
+    data: result
+  });
+
+  clients = clients.filter(ws => {
+    try {
+      if (ws.readyState === 1) {
+        ws.send(message);
+        return true;
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
+  });
+}
 
 function logEvent(id, type, message) {
   const entry = {
     id,
-    type, // start | stop | exit | restart
+    type,
     message,
     time: new Date().toISOString()
   };
@@ -78,136 +209,189 @@ function logEvent(id, type, message) {
   broadcastEvent(entry);
 }
 
-// ======================
+// ======================================================
 // 🎯 CHANNELS
-// كل قناة ممكن يكون ليها: input, output, logo (رابط صورة), category (تصنيف)
-// ======================
+// ======================================================
+
 const channels = {
+
+  // ====================================================
+  // YOUTUBE / NORMAL
+  // ====================================================
+
   chyt1: {
     input: "https://www.youtube.com/live/7DHNbnPMNiM?si=Ypmmu60JMR9OtlNa",
     output: "",
     logo: "",
     category: "",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
+  // ====================================================
+  // 4K
+  // ====================================================
+
   ch4k: {
     input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
     output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0",
     logo: "logo4kh.png",
     category: "",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
+  // ====================================================
+  // 🏟️ SPORTS
+  //
+  // النظام القديم محفوظ:
+  // input -> output
+  // ====================================================
+
   ch1: {
-    input: "https://163.ostv.info/krikar/krikar/652333?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    input: "ضع رابط ch1 الحالي هنا",
     output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm",
     logo: "logo1.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_1.m3u8"
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_1.m3u8",
+    quality: "high"
   },
+
   ch2: {
-    input: "https://163.ostv.info/krikar/krikar/652334?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    input: "ضع رابط ch2 الحالي هنا",
     output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy",
     logo: "logo22.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_2.m3u8"
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_2.m3u8",
+    quality: "high"
   },
+
   ch3: {
-    input: "https://163.ostv.info/krikar/krikar/652335?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    input: "ضع رابط ch3 الحالي هنا",
     output: "rtmp://vsu.okcdn.ru/input/15651304709717_17641796995669_ozpan4c55m",
     logo: "logo33.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_3.m3u8"
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_3.m3u8",
+    quality: "high"
   },
+
   ch4: {
-    input: "https://163.ostv.info/krikar/krikar/652336?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    input: "ضع رابط ch4 الحالي هنا",
     output: "rtmp://vsu.okcdn.ru/input/15651325025877_17641833499221_yp3cn26lt4",
     logo: "logo44.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_4.m3u8"
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_4.m3u8",
+    quality: "high"
   },
+
+  // ====================================================
+  // NORMAL CHANNELS
+  // ====================================================
+
   ch5: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/14863707479574_16379956300310_uoslkp4xrm",
     logo: "logo55.png",
     category: "",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
   ch6: {
     input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
     output: "rtmp://vsu.okcdn.ru/input/14901168119318_16447213341206_ssfncxg2zu",
     logo: "logo66.png",
     category: "",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
   ch7: {
     input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
     logo: "quran3.png",
     category: "دينية",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
   ch8: {
     input: "https://blc2cr.linkip.org/live/90055_.m3u8?play=",
     output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
     logo: "aflam3.png",
     category: "أفلام",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
   ch9: {
     input: "https://blc2cr.linkip.org/live/90131_.m3u8?play",
     output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
     logo: "mosalsalat2.png",
     category: "مسلسلات",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
   ch10: {
     input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
     output: "rtmp://vsu.okcdn.ru/input/14994479390230_16613027809814_7sovqbfsba",
     logo: "animy.png",
     category: "أنمي",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   },
+
   ch11: {
     input: "https://blc2cr.linkip.org/live/90068_.m3u8?play",
     output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
     logo: "kids3.png",
     category: "أطفال",
-    watchUrl: ""
+    watchUrl: "",
+    quality: "high"
   }
 };
 
-// ======================
-// 🎬 LOGO (fallback ثابت لو القناة مالهاش لوجو محدد)
-// ======================
+// ======================================================
+// 🎬 GET LOGO
+// ======================================================
+
 function getLogo(id) {
+
   const ch = channels[id];
-  if (ch && ch.logo) return ch.logo;
+
+  if (ch && ch.logo) {
+    return ch.logo;
+  }
 
   const logos = {
+
     ch4k: "logo4kh.png",
+
     ch1: "logo1.png",
     ch2: "logo22.png",
     ch3: "logo33.png",
     ch4: "logo44.png",
+
     ch5: "logo55.png",
     ch6: "logo66.png",
+
     ch7: "quran.png",
     ch8: "aflam.png",
     ch9: "mosalsalat.png",
     ch10: "animy.png",
-    ch11: "kids.png",
+    ch11: "kids.png"
   };
 
   return logos[id] || "logo.png";
 }
 
-// ======================
-// ▶️ يوتيوب: استخراج رابط HLS الحقيقي من رابط بث مباشر على يوتيوب
-// ======================
-// ======================
-// 🎚️ مستويات الجودة (لتقليل حمل المعالج على القنوات الأقل أهمية)
-// ======================
+// ======================================================
+// 🎚️ QUALITY
+// ======================================================
+
 const QUALITY_PRESETS = {
+
   high: {
     scale: "1920:1080",
     bitrate: "5000k",
@@ -218,6 +402,7 @@ const QUALITY_PRESETS = {
     level: "4.1",
     fps: "25"
   },
+
   medium: {
     scale: "1280:720",
     bitrate: "2500k",
@@ -228,6 +413,7 @@ const QUALITY_PRESETS = {
     level: "3.1",
     fps: "25"
   },
+
   low: {
     scale: "854:480",
     bitrate: "1200k",
@@ -241,360 +427,2087 @@ const QUALITY_PRESETS = {
 };
 
 function getQualityPreset(ch) {
-  return QUALITY_PRESETS[ch?.quality] || QUALITY_PRESETS.high;
+  return QUALITY_PRESETS[ch?.quality] ||
+         QUALITY_PRESETS.high;
 }
 
+// ======================================================
+// 📚 GET SOURCES
+// ======================================================
+//
+// القنوات القديمة:
+// input: "..."
+// تتحول تلقائيًا إلى:
+// sources: [{url: input, title: "..."}]
+//
+// القنوات الجديدة:
+// sources: [
+//   {url: "...", title: "..."},
+//   {url: "...", title: "..."},
+// ]
+// ======================================================
+
+function getSources(ch) {
+
+  if (
+    Array.isArray(ch?.sources) &&
+    ch.sources.length > 0
+  ) {
+
+    return ch.sources
+      .map((source, index) => {
+
+        if (typeof source === "string") {
+          return {
+            url: source.trim(),
+            title: `المصدر ${index + 1}`
+          };
+        }
+
+        return {
+          url: String(source?.url || "").trim(),
+          title:
+            String(
+              source?.title ||
+              `المصدر ${index + 1}`
+            ).trim()
+        };
+
+      })
+      .filter(source => source.url);
+  }
+
+  // دعم القنوات القديمة
+  if (ch?.input) {
+
+    return [
+      {
+        url: ch.input,
+        title: "الرابط الأساسي"
+      }
+    ];
+  }
+
+  return [];
+}
+
+// ======================================================
+// ▶️ YOUTUBE
+// ======================================================
+
 function isYoutubeUrl(url) {
+
   try {
-    const host = new URL(url).hostname.replace(/^www\./, "");
-    return host === "youtube.com" || host === "youtu.be" || host === "m.youtube.com";
-  } catch (e) {
+
+    const host =
+      new URL(url)
+        .hostname
+        .replace(/^www\./, "");
+
+    return (
+      host === "youtube.com" ||
+      host === "youtu.be" ||
+      host === "m.youtube.com"
+    );
+
+  } catch {
+
     return false;
   }
 }
 
-async function resolveInputUrl(id, rawInput) {
-  if (!isYoutubeUrl(rawInput)) return rawInput;
+// ======================================================
+// 🔎 RESOLVE INPUT
+// ======================================================
 
-  console.log(`[${id}] 🔎 جاري استخراج رابط البث المباشر من يوتيوب (yt-dlp)...`);
+async function resolveInputUrl(id, rawInput) {
+
+  if (!isYoutubeUrl(rawInput)) {
+    return rawInput;
+  }
+
+  console.log(
+    `[${id}] 🔎 استخراج رابط YouTube...`
+  );
 
   let stdout;
+
   try {
-    const result = await execFileAsync(
-      "python3",
-      ["-m", "yt_dlp", "-g", "--no-warnings", rawInput],
-      { timeout: 25000 }
-    );
+
+    const result =
+      await execFileAsync(
+        "python3",
+        [
+          "-m",
+          "yt_dlp",
+          "-g",
+          "--no-warnings",
+          rawInput
+        ],
+        {
+          timeout: 25000
+        }
+      );
+
     stdout = result.stdout;
+
   } catch (err) {
-    const detail = (err.stderr || err.message || "").toString().split("\n")[0];
-    throw new Error("فشل استخراج رابط يوتيوب: " + detail);
+
+    const detail =
+      (
+        err.stderr ||
+        err.message ||
+        ""
+      )
+      .toString()
+      .split("\n")[0];
+
+    throw new Error(
+      "فشل استخراج رابط يوتيوب: " +
+      detail
+    );
   }
 
-  const lines = stdout.trim().split("\n").map(l => l.trim()).filter(Boolean);
+  const lines =
+    stdout
+      .trim()
+      .split("\n")
+      .map(l => l.trim())
+      .filter(Boolean);
 
-  if (lines.length === 0) {
-    throw new Error("لم يتم العثور على رابط بث — تأكد إن الفيديو ده بث مباشر شغال فعليًا دلوقتي");
+  if (!lines.length) {
+
+    throw new Error(
+      "لم يتم العثور على رابط بث"
+    );
   }
 
-  console.log(`[${id}] ✅ تم استخراج رابط يوتيوب بنجاح عن طريق yt-dlp`);
   return lines[0];
 }
 
-// ======================
+// ======================================================
 // 🛡️ SAFETY
-// ======================
-process.on("uncaughtException", (err) => {
-  console.log("🔥 ERROR:", err.message);
-});
+// ======================================================
 
-process.on("unhandledRejection", (err) => {
-  console.log("🔥 PROMISE ERROR:", err);
-});
+process.on(
+  "uncaughtException",
+  err => {
+    console.log(
+      "🔥 ERROR:",
+      err.message
+    );
+  }
+);
 
-// ======================
+process.on(
+  "unhandledRejection",
+  err => {
+    console.log(
+      "🔥 PROMISE ERROR:",
+      err
+    );
+  }
+);
+
+// ======================================================
 // 🎬 START STREAM
-// ======================
-async function spawnStream(id) {
-  if (ffmpegProcesses[id]) return;
+// ======================================================
 
-  const ch = channels[id];
-  if (!ch) return;
+async function spawnStream(
+  id,
+  requestedSourceIndex = null,
+  options = {}
+) {
 
-  // نستخرج الرابط الفعلي (لو رابط يوتيوب، بنحوله لرابط HLS حقيقي)
-  let resolvedInput;
-  try {
-    resolvedInput = await resolveInputUrl(id, ch.input);
-  } catch (err) {
-    console.log(`[${id}] 🔥 فشل استخراج رابط البث:`, err.message);
-    logEvent(id, "exit", "تعذر تشغيل القناة: " + err.message);
+  // ----------------------------------------------------
+  // لو فيه FFmpeg شغال بالفعل
+  // ----------------------------------------------------
+
+  if (ffmpegProcesses[id]) {
     return;
   }
 
-  // لو القناة اتقفلت أو اتشغلت من مكان تاني أثناء ما كنا بنستخرج الرابط
-  if (ffmpegProcesses[id]) return;
+  const ch = channels[id];
 
-  console.log("▶ START:", id);
-  logEvent(id, "start", "تم تشغيل القناة");
+  if (!ch) {
+    return;
+  }
 
-  // أي تشغيل (يدوي أو تلقائي) يلغي حالة "متوقفة يدويًا"
+  const sources = getSources(ch);
+
+  if (!sources.length) {
+
+    console.log(
+      `[${id}] ❌ لا توجد مصادر`
+    );
+
+    logEvent(
+      id,
+      "exit",
+      "لا توجد روابط تشغيل"
+    );
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // تحديد المصدر
+  // ----------------------------------------------------
+
+  let sourceIndex;
+
+  if (
+    requestedSourceIndex !== null &&
+    Number.isInteger(requestedSourceIndex)
+  ) {
+
+    sourceIndex = requestedSourceIndex;
+
+  } else if (
+    Number.isInteger(currentSourceIndex[id])
+  ) {
+
+    sourceIndex =
+      currentSourceIndex[id];
+
+  } else {
+
+    sourceIndex = 0;
+  }
+
+  if (sourceIndex < 0) {
+    sourceIndex = 0;
+  }
+
+  if (sourceIndex >= sources.length) {
+    sourceIndex = 0;
+  }
+
+  const source =
+    sources[sourceIndex];
+
+  currentSourceIndex[id] =
+    sourceIndex;
+
+  currentSourceTitle[id] =
+    source.title;
+
+  // ----------------------------------------------------
+  // Generation
+  // ----------------------------------------------------
+
+  const generation =
+    (streamGeneration[id] || 0) + 1;
+
+  streamGeneration[id] =
+    generation;
+
+  // ----------------------------------------------------
+  // Resolve URL
+  // ----------------------------------------------------
+
+  let resolvedInput;
+
+  try {
+
+    resolvedInput =
+      await resolveInputUrl(
+        id,
+        source.url
+      );
+
+  } catch (err) {
+
+    console.log(
+      `[${id}] 🔥 فشل المصدر ${sourceIndex + 1}:`,
+      err.message
+    );
+
+    logEvent(
+      id,
+      "exit",
+      `فشل المصدر ${sourceIndex + 1}: ${err.message}`
+    );
+
+    // --------------------------------------------------
+    // الانتقال للمصدر التالي عند فشل المصدر
+    // --------------------------------------------------
+
+    if (sources.length > 1) {
+
+      setTimeout(() => {
+
+        if (
+          streamGeneration[id] !== generation
+        ) {
+          return;
+        }
+
+        if (manuallyStopped[id]) {
+          return;
+        }
+
+        advanceToNextSource(id);
+
+      }, 3000);
+    }
+
+    return;
+  }
+
+  // ----------------------------------------------------
+  // تأكد إن القناة لم تتغير أثناء yt-dlp
+  // ----------------------------------------------------
+
+  if (
+    ffmpegProcesses[id] ||
+    streamGeneration[id] !== generation
+  ) {
+    return;
+  }
+
+  console.log(
+    `▶ START: ${id} | ${sourceIndex + 1}/${sources.length} | ${source.title}`
+  );
+
+  logEvent(
+    id,
+    "start",
+    `تشغيل: ${source.title} (${sourceIndex + 1}/${sources.length})`
+  );
+
   manuallyStopped[id] = false;
 
-  // بداية جلسة بث حقيقية جديدة
-  liveSince[id] = Date.now();
-  if (totalOnairMs[id] == null) totalOnairMs[id] = 0;
+  // ----------------------------------------------------
+  // Metrics
+  // ----------------------------------------------------
+
+  liveSince[id] =
+    Date.now();
+
+  if (totalOnairMs[id] == null) {
+    totalOnairMs[id] = 0;
+  }
+
   lastBitrateKbps[id] = null;
 
-  const q = getQualityPreset(ch);
+  sourceRetryCount[id] =
+    sourceRetryCount[id] || 0;
 
-  const ffmpeg = spawn("ffmpeg", [
-    "-re",
+  const q =
+    getQualityPreset(ch);
 
-    "-reconnect", "1",
-    "-reconnect_streamed", "1",
-    "-reconnect_delay_max", "5",
+  // ----------------------------------------------------
+  // FILTER
+  // ----------------------------------------------------
 
-    "-i", resolvedInput,
-    "-i", getLogo(id),
+  const videoScale =
+    q.scale ||
+    "1920:1080";
 
-    "-filter_complex",
-    "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[base];[1:v]scale=-1:3000[logo];[base][logo]overlay=W-w-2:2",
+  const filterComplex =
+    `[0:v]scale=${videoScale}:force_original_aspect_ratio=decrease,pad=${videoScale.replace(
+      ":",
+      ":"
+    )}:(ow-iw)/2:(oh-ih)/2[base];` +
+    `[1:v]scale=-1:3000[logo];` +
+    `[base][logo]overlay=W-w-2:2`;
 
-    "-c:v", "libx264",
-"-preset", q.preset,
-"-tune", "zerolatency",
+  // ----------------------------------------------------
+  // FFmpeg
+  // ----------------------------------------------------
 
-"-pix_fmt", "yuv420p",
+  const ffmpeg =
+    spawn(
+      "ffmpeg",
+      [
 
-"-profile:v", q.profile,
-"-level", q.level,
+        "-hide_banner",
 
-"-b:v", q.bitrate,
-"-maxrate", q.maxrate,
-"-bufsize", q.bufsize,
+        "-re",
 
-"-r", q.fps,
-"-g", "50",
+        "-reconnect",
+        "1",
 
-    "-c:a", "aac",
-    "-b:a", "128k",
+        "-reconnect_streamed",
+        "1",
 
-    "-f", "flv",
-    ch.output
-  ]);
+        "-reconnect_delay_max",
+        "5",
 
-  ffmpegProcesses[id] = ffmpeg;
+        "-i",
+        resolvedInput,
 
-  ffmpeg.stderr.on("data", (d) => {
-    const text = d.toString();
-    console.log(`[${id}] ${text}`);
+        "-i",
+        getLogo(id),
 
-    text.split("\n").forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed) pushLog(id, trimmed);
-    });
+        "-filter_complex",
+        filterComplex,
 
-    // قراءة البت ريت الحقيقي اللي ffmpeg بيبعته فعليًا
-    const match = text.match(/bitrate=\s*([\d.]+)\s*kbits\/s/i);
-    if (match) {
-      lastBitrateKbps[id] = parseFloat(match[1]);
+        "-c:v",
+        "libx264",
+
+        "-preset",
+        q.preset,
+
+        "-tune",
+        "zerolatency",
+
+        "-pix_fmt",
+        "yuv420p",
+
+        "-profile:v",
+        q.profile,
+
+        "-level",
+        q.level,
+
+        "-b:v",
+        q.bitrate,
+
+        "-maxrate",
+        q.maxrate,
+
+        "-bufsize",
+        q.bufsize,
+
+        "-r",
+        q.fps,
+
+        "-g",
+        "50",
+
+        "-c:a",
+        "aac",
+
+        "-b:a",
+        "128k",
+
+        "-f",
+        "flv",
+
+        ch.output
+      ]
+    );
+
+  ffmpegProcesses[id] =
+    ffmpeg;
+
+  // ====================================================
+  // 📝 STDERR
+  // ====================================================
+
+  ffmpeg.stderr.on(
+    "data",
+    d => {
+
+      const text =
+        d.toString();
+
+      console.log(
+        `[${id}] ${text}`
+      );
+
+      text
+        .split("\n")
+        .forEach(line => {
+
+          const trimmed =
+            line.trim();
+
+          if (trimmed) {
+            pushLog(
+              id,
+              trimmed
+            );
+          }
+        });
+
+      const match =
+        text.match(
+          /bitrate=\s*([\d.]+)\s*kbits\/s/i
+        );
+
+      if (match) {
+
+        lastBitrateKbps[id] =
+          parseFloat(match[1]);
+      }
     }
-  });
+  );
 
-  ffmpeg.on("exit", () => {
-    delete ffmpegProcesses[id];
+  // ====================================================
+  // 🎬 EXIT
+  // ====================================================
 
-    // نضيف مدة الجلسة دي لإجمالي وقت البث الحقيقي قبل ما نصفرها
-    if (liveSince[id]) {
-      totalOnairMs[id] = (totalOnairMs[id] || 0) + (Date.now() - liveSince[id]);
-      delete liveSince[id];
+  ffmpeg.on(
+    "exit",
+    (code, signal) => {
+
+      // ------------------------------------------------
+      // مهم جدًا:
+      // تجاهل process قديم
+      // ------------------------------------------------
+
+      if (
+        streamGeneration[id] !== generation
+      ) {
+        return;
+      }
+
+      delete ffmpegProcesses[id];
+
+      // ------------------------------------------------
+      // حساب وقت البث
+      // ------------------------------------------------
+
+      if (liveSince[id]) {
+
+        totalOnairMs[id] =
+          (totalOnairMs[id] || 0) +
+          (
+            Date.now() -
+            liveSince[id]
+          );
+
+        delete liveSince[id];
+      }
+
+      lastBitrateKbps[id] =
+        null;
+
+      // ------------------------------------------------
+      // Manual Stop
+      // ------------------------------------------------
+
+      if (manuallyStopped[id]) {
+
+        console.log(
+          "⏹ EXIT (manual):",
+          id
+        );
+
+        return;
+      }
+
+      // =================================================
+      // 🎬 MULTI SOURCE
+      // =================================================
+
+      const latestSources =
+        getSources(ch);
+
+      const currentIndex =
+        currentSourceIndex[id] ?? 0;
+
+      const normalEnd =
+        code === 0 ||
+        signal === "SIGTERM" ||
+        signal === null;
+
+      // -------------------------------------------------
+      // إذا كان عندنا أكثر من مصدر
+      // -------------------------------------------------
+
+      if (
+        latestSources.length > 1
+      ) {
+
+        // -----------------------------------------------
+        // الفيلم/الحلقة انتهى طبيعيًا
+        // -----------------------------------------------
+
+        if (code === 0) {
+
+          sourceRetryCount[id] = 0;
+
+          advanceToNextSource(id);
+
+          return;
+        }
+
+        // -----------------------------------------------
+        // خطأ FFmpeg
+        // -----------------------------------------------
+
+        sourceRetryCount[id] =
+          (sourceRetryCount[id] || 0) + 1;
+
+        if (
+          sourceRetryCount[id] <=
+          MAX_SOURCE_RETRIES
+        ) {
+
+          console.log(
+            `[${id}] ⚠️ خطأ في المصدر الحالي، إعادة المحاولة ${sourceRetryCount[id]}/${MAX_SOURCE_RETRIES}`
+          );
+
+          logEvent(
+            id,
+            "restart",
+            `إعادة محاولة المصدر: ${currentIndex + 1}`
+          );
+
+          setTimeout(() => {
+
+            if (
+              manuallyStopped[id]
+            ) {
+              return;
+            }
+
+            if (
+              ffmpegProcesses[id]
+            ) {
+              return;
+            }
+
+            spawnStream(
+              id,
+              currentIndex,
+              {
+                retry: true
+              }
+            );
+
+          }, 5000);
+
+          return;
+        }
+
+        // -----------------------------------------------
+        // فشل المصدر عدة مرات
+        // الانتقال للتالي
+        // -----------------------------------------------
+
+        sourceRetryCount[id] = 0;
+
+        console.log(
+          `[${id}] ⚠️ المصدر فشل بعد عدة محاولات`
+        );
+
+        logEvent(
+          id,
+          "exit",
+          `المصدر ${currentIndex + 1} فشل، الانتقال للمصدر التالي`
+        );
+
+        advanceToNextSource(id);
+
+        return;
+      }
+
+      // =================================================
+      // قناة عادية ذات رابط واحد
+      // النظام القديم
+      // =================================================
+
+      console.log(
+        "❌ EXIT (unexpected):",
+        id,
+        "code:",
+        code,
+        "signal:",
+        signal
+      );
+
+      logEvent(
+        id,
+        "exit",
+        "توقفت القناة (خروج غير متوقع)"
+      );
+
+      setTimeout(() => {
+
+        if (
+          !ffmpegProcesses[id] &&
+          !manuallyStopped[id]
+        ) {
+
+          logEvent(
+            id,
+            "restart",
+            "إعادة تشغيل تلقائية بعد التوقف"
+          );
+
+          spawnStream(id);
+        }
+
+      }, 8000);
     }
-    lastBitrateKbps[id] = null;
+  );
+}
 
-    // لو اتوقفت يدويًا، منعملش إعادة تشغيل تلقائي
-    if (manuallyStopped[id]) {
-      console.log("⏹ EXIT (manual stop):", id);
+// ======================================================
+// ⏭️ NEXT SOURCE
+// ======================================================
+
+function advanceToNextSource(id) {
+
+  const ch =
+    channels[id];
+
+  if (!ch) {
+    return;
+  }
+
+  const sources =
+    getSources(ch);
+
+  if (!sources.length) {
+    return;
+  }
+
+  let current =
+    currentSourceIndex[id] ?? 0;
+
+  let next =
+    current + 1;
+
+  // ----------------------------------------------------
+  // آخر رابط
+  // ----------------------------------------------------
+
+  if (next >= sources.length) {
+
+    if (ch.loopSources) {
+
+      next = 0;
+
+      console.log(
+        `[${id}] 🔁 انتهت كل المصادر — Loop إلى أول مصدر`
+      );
+
+      logEvent(
+        id,
+        "restart",
+        "انتهت كل الروابط — الرجوع لأول رابط"
+      );
+
+    } else {
+
+      console.log(
+        `[${id}] ⏹ انتهت كل المصادر`
+      );
+
+      logEvent(
+        id,
+        "stop",
+        "انتهت جميع الروابط"
+      );
+
+      manuallyStopped[id] = true;
+
+      return;
+    }
+  }
+
+  currentSourceIndex[id] =
+    next;
+
+  currentSourceTitle[id] =
+    sources[next].title;
+
+  sourceRetryCount[id] =
+    0;
+
+  // ----------------------------------------------------
+  // تشغيل المصدر التالي
+  // ----------------------------------------------------
+
+  setTimeout(() => {
+
+    if (
+      manuallyStopped[id]
+    ) {
       return;
     }
 
-    console.log("❌ EXIT (unexpected):", id);
-    logEvent(id, "exit", "توقفت القناة (خروج غير متوقع)");
+    if (
+      ffmpegProcesses[id]
+    ) {
+      return;
+    }
 
-    setTimeout(() => {
-      if (!ffmpegProcesses[id] && !manuallyStopped[id]) {
-        logEvent(id, "restart", "إعادة تشغيل تلقائية بعد التوقف");
-        spawnStream(id);
-      }
-    }, 8000);
-  });
+    spawnStream(
+      id,
+      next
+    );
+
+  }, 1500);
 }
 
-// ======================
+// ======================================================
 // 🌐 ROUTES
-// ======================
-app.get("/", (req, res) => {
-  res.send("🚀 IPTV PRO SERVER RUNNING");
-});
+// ======================================================
 
-app.get("/start", (req, res) => {
-  const id = req.query.id;
-  if (!channels[id]) return res.send("❌ invalid channel");
-
-  spawnStream(id);
-  res.send("started " + id);
-});
-
-app.get("/stop", (req, res) => {
-  const id = req.query.id;
-
-  manuallyStopped[id] = true;
-
-  if (ffmpegProcesses[id]) {
-    ffmpegProcesses[id].kill("SIGKILL");
-    delete ffmpegProcesses[id];
-    logEvent(id, "stop", "تم إيقاف القناة يدويًا");
+app.get(
+  "/",
+  (req, res) => {
+    res.send(
+      "🚀 IPTV PRO SERVER RUNNING"
+    );
   }
+);
 
-  res.send("stopped " + id);
-});
+// ======================================================
+// ▶️ START
+// ======================================================
 
-app.get("/start-all", (req, res) => {
-  for (const id in channels) {
+app.get(
+  "/start",
+  (req, res) => {
+
+    const id =
+      req.query.id;
+
+    if (!channels[id]) {
+      return res.send(
+        "❌ invalid channel"
+      );
+    }
+
+    manuallyStopped[id] = false;
+
+    // عند التشغيل اليدوي نبدأ من المصدر الحالي
     spawnStream(id);
-  }
-  res.json({ ok: true });
-});
 
-app.get("/stop-all", (req, res) => {
-  for (const id in channels) {
-    manuallyStopped[id] = true;
+    res.send(
+      "started " + id
+    );
+  }
+);
+
+// ======================================================
+// ⏹ STOP
+// ======================================================
+
+app.get(
+  "/stop",
+  (req, res) => {
+
+    const id =
+      req.query.id;
+
+    manuallyStopped[id] =
+      true;
+
+    // إلغاء أي عمليات انتقال معلقة
+    streamGeneration[id] =
+      (streamGeneration[id] || 0) + 1;
 
     if (ffmpegProcesses[id]) {
-      ffmpegProcesses[id].kill("SIGKILL");
+
+      ffmpegProcesses[id]
+        .kill("SIGKILL");
+
       delete ffmpegProcesses[id];
-      logEvent(id, "stop", "تم إيقاف القناة يدويًا (إيقاف الكل)");
+
+      logEvent(
+        id,
+        "stop",
+        "تم إيقاف القناة يدويًا"
+      );
     }
+
+    res.send(
+      "stopped " + id
+    );
   }
-  res.json({ ok: true });
-});
+);
 
-app.get("/events", (req, res) => {
-  res.json(eventLog);
-});
+// ======================================================
+// ▶️ START ALL
+// ======================================================
 
-app.get("/logs/:id", (req, res) => {
-  const id = req.params.id;
-  res.json(ffmpegLogs[id] || []);
-});
+app.get(
+  "/start-all",
+  (req, res) => {
 
-// ======================
-// 👁️ رابط المشاهدة الحقيقي (بروكسي + عداد حقيقي)
-// كل طلب بيعدي من هنا بيتسجل كمشاهد حقيقي
-// ======================
-async function handleWatchRequest(req, res) {
-  const id = req.params.id;
-  const ch = channels[id];
+    for (
+      const id in channels
+    ) {
 
-  if (!ch || !ch.watchUrl) {
-    return res.status(404).send("لا يوجد رابط مشاهدة لهذه القناة");
+      manuallyStopped[id] =
+        false;
+
+      spawnStream(id);
+    }
+
+    res.json({
+      ok: true
+    });
+  }
+);
+
+// ======================================================
+// ⏹ STOP ALL
+// ======================================================
+
+app.get(
+  "/stop-all",
+  (req, res) => {
+
+    for (
+      const id in channels
+    ) {
+
+      manuallyStopped[id] =
+        true;
+
+      streamGeneration[id] =
+        (streamGeneration[id] || 0) + 1;
+
+      if (
+        ffmpegProcesses[id]
+      ) {
+
+        ffmpegProcesses[id]
+          .kill("SIGKILL");
+
+        delete ffmpegProcesses[id];
+
+        logEvent(
+          id,
+          "stop",
+          "تم إيقاف القناة يدويًا (إيقاف الكل)"
+        );
+      }
+    }
+
+    res.json({
+      ok: true
+    });
+  }
+);
+
+// ======================================================
+// 📜 EVENTS
+// ======================================================
+
+app.get(
+  "/events",
+  (req, res) => {
+    res.json(eventLog);
+  }
+);
+
+// ======================================================
+// 📝 LOGS
+// ======================================================
+
+app.get(
+  "/logs/:id",
+  (req, res) => {
+
+    const id =
+      req.params.id;
+
+    res.json(
+      ffmpegLogs[id] || []
+    );
+  }
+);
+
+// ======================================================
+// 👁️ WATCH PROXY
+// ======================================================
+
+async function handleWatchRequest(
+  req,
+  res
+) {
+
+  const id =
+    req.params.id;
+
+  const ch =
+    channels[id];
+
+  if (
+    !ch ||
+    !ch.watchUrl
+  ) {
+
+    return res
+      .status(404)
+      .send(
+        "لا يوجد رابط مشاهدة لهذه القناة"
+      );
   }
 
-  // تسجيل المشاهد (IP الطالب) كمشاهد حقيقي حالي وإجمالي
-  const ip = req.ip || req.connection.remoteAddress || "unknown";
+  const ip =
+    req.ip ||
+    req.connection.remoteAddress ||
+    "unknown";
 
-  if (!currentViewerLog[id]) currentViewerLog[id] = new Map();
-  currentViewerLog[id].set(ip, Date.now());
+  if (
+    !currentViewerLog[id]
+  ) {
 
-  if (!totalViewerSet[id]) totalViewerSet[id] = new Set();
-  totalViewerSet[id].add(ip);
+    currentViewerLog[id] =
+      new Map();
+  }
+
+  currentViewerLog[id]
+    .set(
+      ip,
+      Date.now()
+    );
+
+  if (
+    !totalViewerSet[id]
+  ) {
+
+    totalViewerSet[id] =
+      new Set();
+  }
+
+  totalViewerSet[id]
+    .add(ip);
 
   try {
-    const upstream = await fetch(ch.watchUrl);
+
+    const upstream =
+      await fetch(
+        ch.watchUrl
+      );
 
     if (!upstream.ok) {
-      return res.status(502).send("تعذر الوصول لرابط المشاهدة الأصلي");
+
+      return res
+        .status(502)
+        .send(
+          "تعذر الوصول لرابط المشاهدة الأصلي"
+        );
     }
 
-    const text = await upstream.text();
+    const text =
+      await upstream.text();
 
-    // إعادة كتابة أي أسطر نسبية (segments) عشان تفضل شغالة برضو بعد المرور من عندنا
-    const rewritten = text.split("\n").map(line => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) return line;
-      try {
-        return new URL(trimmed, ch.watchUrl).href;
-      } catch (e) {
-        return line;
-      }
-    }).join("\n");
+    const rewritten =
+      text
+        .split("\n")
+        .map(line => {
 
-    res.set("Content-Type", "application/vnd.apple.mpegurl");
-    res.send(rewritten);
+          const trimmed =
+            line.trim();
+
+          if (
+            !trimmed ||
+            trimmed.startsWith("#")
+          ) {
+            return line;
+          }
+
+          try {
+
+            return new URL(
+              trimmed,
+              ch.watchUrl
+            ).href;
+
+          } catch {
+
+            return line;
+          }
+        })
+        .join("\n");
+
+    res.set(
+      "Content-Type",
+      "application/vnd.apple.mpegurl"
+    );
+
+    res.set(
+      "Cache-Control",
+      "no-cache, no-store, must-revalidate"
+    );
+
+    res.send(
+      rewritten
+    );
 
   } catch (err) {
-    console.log("🔥 /watch proxy error:", err.message);
-    res.status(502).send("تعذر جلب رابط المشاهدة");
+
+    console.log(
+      "🔥 /watch proxy error:",
+      err.message
+    );
+
+    res
+      .status(502)
+      .send(
+        "تعذر جلب رابط المشاهدة"
+      );
   }
 }
 
-// نفس المسار بصيغتين: بدون امتداد، وبامتداد .m3u8 (بعض مشغلات IPTV محتاجة الامتداد صراحة)
-// لازم مسار .m3u8 يتسجل الأول، عشان مسار :id العادي بيقبل أي حروف (حتى النقطة) ويلقطه الأول لو اتسجل قبله
-app.get("/watch/:id.m3u8", handleWatchRequest);
-app.get("/watch/:id", handleWatchRequest);
+app.get(
+  "/watch/:id.m3u8",
+  handleWatchRequest
+);
 
-app.get("/status", (req, res) => {
-  const result = {};
+app.get(
+  "/watch/:id",
+  handleWatchRequest
+);
 
-  for (const id in channels) {
-    const active = !!ffmpegProcesses[id];
-    const currentSessionMs = active && liveSince[id] ? (Date.now() - liveSince[id]) : 0;
+// ======================================================
+// 📊 STATUS
+// ======================================================
 
-    result[id] = {
-      active,
-      uptimeSeconds: Math.floor(currentSessionMs / 1000),
-      totalSeconds: Math.floor(((totalOnairMs[id] || 0) + currentSessionMs) / 1000),
-      bitrateKbps: active ? (lastBitrateKbps[id] || null) : null,
-      currentViewers: currentViewerLog[id] ? currentViewerLog[id].size : 0,
-      totalViewers: totalViewerSet[id] ? totalViewerSet[id].size : 0
+app.get(
+  "/status",
+  (req, res) => {
+
+    const result = {};
+
+    for (
+      const id in channels
+    ) {
+
+      const active =
+        !!ffmpegProcesses[id];
+
+      const currentSessionMs =
+        active &&
+        liveSince[id]
+          ? Date.now() -
+            liveSince[id]
+          : 0;
+
+      const sources =
+        getSources(
+          channels[id]
+        );
+
+      result[id] = {
+
+        active,
+
+        uptimeSeconds:
+          Math.floor(
+            currentSessionMs /
+            1000
+          ),
+
+        totalSeconds:
+          Math.floor(
+            (
+              (totalOnairMs[id] || 0) +
+              currentSessionMs
+            ) / 1000
+          ),
+
+        bitrateKbps:
+          active
+            ? (
+                lastBitrateKbps[id] ||
+                null
+              )
+            : null,
+
+        currentViewers:
+          currentViewerLog[id]
+            ? currentViewerLog[id].size
+            : 0,
+
+        totalViewers:
+          totalViewerSet[id]
+            ? totalViewerSet[id].size
+            : 0,
+
+        // =================================================
+        // 🎬 MULTI SOURCE STATUS
+        // =================================================
+
+        sourceIndex:
+          sources.length
+            ? (
+                currentSourceIndex[id] ??
+                0
+              )
+            : null,
+
+        sourceNumber:
+          sources.length
+            ? (
+                (currentSourceIndex[id] ??
+                0) + 1
+              )
+            : null,
+
+        sourceTitle:
+          currentSourceTitle[id] ||
+          null,
+
+        sourceCount:
+          sources.length,
+
+        loopSources:
+          !!channels[id].loopSources
+      };
+    }
+
+    res.json(result);
+  }
+);
+
+// ======================================================
+// 📡 CHANNELS
+// ======================================================
+
+app.get(
+  "/channels",
+  (req, res) => {
+    res.json(channels);
+  }
+);
+
+// ======================================================
+// ➕ ADD CHANNEL
+// ======================================================
+
+app.post(
+  "/channel",
+  (req, res) => {
+
+    const {
+      id,
+      input,
+      output,
+      logo,
+      category,
+      watchUrl,
+      quality,
+      sources,
+      loopSources
+    } = req.body;
+
+    if (
+      !id ||
+      !output
+    ) {
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "id و output مطلوبان"
+        });
+    }
+
+    // ----------------------------------------------------
+    // دعم النظام القديم
+    // ----------------------------------------------------
+
+    let normalizedSources = [];
+
+    if (
+      Array.isArray(sources) &&
+      sources.length
+    ) {
+
+      normalizedSources =
+        sources
+          .map((source, index) => {
+
+            if (
+              typeof source ===
+              "string"
+            ) {
+
+              return {
+                url:
+                  source.trim(),
+
+                title:
+                  `المصدر ${index + 1}`
+              };
+            }
+
+            return {
+              url:
+                String(
+                  source?.url || ""
+                ).trim(),
+
+              title:
+                String(
+                  source?.title ||
+                  `المصدر ${index + 1}`
+                ).trim()
+            };
+
+          })
+          .filter(
+            source =>
+              source.url
+          );
+    }
+
+    // لو مفيش sources
+    // استخدم input القديم
+    if (
+      !normalizedSources.length &&
+      input
+    ) {
+
+      normalizedSources = [
+        {
+          url: input,
+          title: "الرابط الأساسي"
+        }
+      ];
+    }
+
+    if (
+      !normalizedSources.length
+    ) {
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "يجب إضافة input أو sources"
+        });
+    }
+
+    channels[id] = {
+
+      // النظام القديم محفوظ
+      input:
+        input ||
+        normalizedSources[0].url,
+
+      output,
+
+      logo:
+        logo || "",
+
+      category:
+        category || "",
+
+      watchUrl:
+        watchUrl || "",
+
+      quality:
+        QUALITY_PRESETS[quality]
+          ? quality
+          : "high",
+
+      // النظام الجديد
+      sources:
+        normalizedSources,
+
+      loopSources:
+        loopSources !== false
     };
+
+    currentSourceIndex[id] = 0;
+
+    currentSourceTitle[id] =
+      normalizedSources[0].title;
+
+    sourceRetryCount[id] = 0;
+
+    res.json({
+      ok: true,
+      channel:
+        channels[id]
+    });
   }
+);
 
-  res.json(result);
-});
+// ======================================================
+// ✏️ UPDATE CHANNEL
+// ======================================================
 
-app.get("/channels", (req, res) => {
-  res.json(channels);
-});
+app.put(
+  "/channel/:id",
+  (req, res) => {
 
-app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category, watchUrl, quality } = req.body;
+    const id =
+      req.params.id;
 
-  if (!id || !input || !output)
-    return res.status(400).json({ ok: false });
+    if (!channels[id]) {
 
-  channels[id] = {
-    input,
-    output,
-    logo: logo || "",
-    category: category || "",
-    watchUrl: watchUrl || "",
-    quality: QUALITY_PRESETS[quality] ? quality : "high"
-  };
+      return res
+        .status(404)
+        .json({
+          ok: false
+        });
+    }
 
-  res.json({ ok: true });
-});
+    const oldChannel =
+      channels[id];
 
-app.put("/channel/:id", (req, res) => {
-  const id = req.params.id;
+    // ----------------------------------------------------
+    // Sources
+    // ----------------------------------------------------
 
-  if (!channels[id])
-    return res.status(404).json({ ok: false });
+    let normalizedSources =
+      oldChannel.sources;
 
-  channels[id] = {
-    ...channels[id],
-    input: req.body.input ?? channels[id].input,
-    output: req.body.output ?? channels[id].output,
-    logo: req.body.logo ?? channels[id].logo,
-    category: req.body.category ?? channels[id].category,
-    watchUrl: req.body.watchUrl ?? channels[id].watchUrl,
-    quality: QUALITY_PRESETS[req.body.quality] ? req.body.quality : (channels[id].quality || "high")
-  };
+    if (
+      Array.isArray(
+        req.body.sources
+      )
+    ) {
 
-  res.json({ ok: true });
-});
+      normalizedSources =
+        req.body.sources
+          .map(
+            (source, index) => {
 
-app.delete("/channel/:id", (req, res) => {
-  const id = req.params.id;
+              if (
+                typeof source ===
+                "string"
+              ) {
 
-  if (ffmpegProcesses[id]) {
-    ffmpegProcesses[id].kill("SIGKILL");
-    delete ffmpegProcesses[id];
+                return {
+                  url:
+                    source.trim(),
+
+                  title:
+                    `المصدر ${index + 1}`
+                };
+              }
+
+              return {
+
+                url:
+                  String(
+                    source?.url || ""
+                  ).trim(),
+
+                title:
+                  String(
+                    source?.title ||
+                    `المصدر ${index + 1}`
+                  ).trim()
+              };
+            }
+          )
+          .filter(
+            source =>
+              source.url
+          );
+    }
+
+    // ----------------------------------------------------
+    // لو sources فاضية لكن فيه input
+    // ----------------------------------------------------
+
+    if (
+      (!normalizedSources ||
+        !normalizedSources.length) &&
+      req.body.input
+    ) {
+
+      normalizedSources = [
+        {
+          url:
+            req.body.input,
+
+          title:
+            "الرابط الأساسي"
+        }
+      ];
+    }
+
+    // ----------------------------------------------------
+    // الحفاظ على النظام القديم
+    // ----------------------------------------------------
+
+    channels[id] = {
+
+      ...oldChannel,
+
+      input:
+        req.body.input ??
+        oldChannel.input,
+
+      output:
+        req.body.output ??
+        oldChannel.output,
+
+      logo:
+        req.body.logo ??
+        oldChannel.logo,
+
+      category:
+        req.body.category ??
+        oldChannel.category,
+
+      watchUrl:
+        req.body.watchUrl ??
+        oldChannel.watchUrl,
+
+      quality:
+        QUALITY_PRESETS[
+          req.body.quality
+        ]
+          ? req.body.quality
+          : (
+              oldChannel.quality ||
+              "high"
+            ),
+
+      // --------------------------------------------------
+      // Multi Source
+      // --------------------------------------------------
+
+      sources:
+        normalizedSources,
+
+      loopSources:
+        req.body.loopSources !== undefined
+          ? !!req.body.loopSources
+          : (
+              oldChannel.loopSources ??
+              true
+            )
+    };
+
+    // ----------------------------------------------------
+    // لو المصدر الحالي أصبح خارج العدد الجديد
+    // ----------------------------------------------------
+
+    const count =
+      normalizedSources?.length || 0;
+
+    if (count > 0) {
+
+      if (
+        currentSourceIndex[id] == null ||
+        currentSourceIndex[id] >= count
+      ) {
+
+        currentSourceIndex[id] = 0;
+      }
+
+      currentSourceTitle[id] =
+        normalizedSources[
+          currentSourceIndex[id]
+        ]?.title || null;
+    }
+
+    res.json({
+      ok: true,
+      channel:
+        channels[id]
+    });
   }
+);
 
-  delete channels[id];
+// ======================================================
+// 🎬 UPDATE SOURCES ONLY
+// ======================================================
+//
+// مفيد جدًا للـ Dashboard
+//
+// PUT /channel/:id/sources
+//
+// body:
+// {
+//   sources: [
+//     {
+//       url: "...",
+//       title: "فيلم 1"
+//     }
+//   ],
+//   loopSources: true
+// }
+// ======================================================
 
-  res.json({ ok: true });
-});
+app.put(
+  "/channel/:id/sources",
+  (req, res) => {
+
+    const id =
+      req.params.id;
+
+    if (!channels[id]) {
+
+      return res
+        .status(404)
+        .json({
+          ok: false
+        });
+    }
+
+    if (
+      !Array.isArray(
+        req.body.sources
+      )
+    ) {
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "sources يجب أن تكون Array"
+        });
+    }
+
+    const sources =
+      req.body.sources
+        .map(
+          (source, index) => {
+
+            if (
+              typeof source ===
+              "string"
+            ) {
+
+              return {
+                url:
+                  source.trim(),
+
+                title:
+                  `المصدر ${index + 1}`
+              };
+            }
+
+            return {
+
+              url:
+                String(
+                  source?.url || ""
+                ).trim(),
+
+              title:
+                String(
+                  source?.title ||
+                  `المصدر ${index + 1}`
+                ).trim()
+            };
+          }
+        )
+        .filter(
+          source =>
+            source.url
+        );
+
+    if (!sources.length) {
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "يجب إضافة مصدر واحد على الأقل"
+        });
+    }
+
+    channels[id].sources =
+      sources;
+
+    channels[id].loopSources =
+      req.body.loopSources !== undefined
+        ? !!req.body.loopSources
+        : (
+            channels[id].loopSources ??
+            true
+          );
+
+    // تحديث input القديم
+    // للحفاظ على التوافق
+    channels[id].input =
+      sources[0].url;
+
+    if (
+      currentSourceIndex[id] == null ||
+      currentSourceIndex[id] >= sources.length
+    ) {
+
+      currentSourceIndex[id] = 0;
+    }
+
+    currentSourceTitle[id] =
+      sources[
+        currentSourceIndex[id]
+      ].title;
+
+    sourceRetryCount[id] = 0;
+
+    res.json({
+      ok: true,
+      channel:
+        channels[id]
+    });
+  }
+);
+
+// ======================================================
+// ⏭️ الانتقال اليدوي للمصدر التالي
+// ======================================================
+//
+// GET /next?id=ch8
+//
+// مفيد للـ Dashboard
+// ======================================================
+
+app.get(
+  "/next",
+  (req, res) => {
+
+    const id =
+      req.query.id;
+
+    if (!channels[id]) {
+
+      return res
+        .status(404)
+        .json({
+          ok: false,
+          error:
+            "invalid channel"
+        });
+    }
+
+    const sources =
+      getSources(
+        channels[id]
+      );
+
+    if (
+      sources.length < 2
+    ) {
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "القناة لا تحتوي على أكثر من رابط"
+        });
+    }
+
+    // إيقاف المصدر الحالي
+    if (
+      ffmpegProcesses[id]
+    ) {
+
+      streamGeneration[id] =
+        (streamGeneration[id] || 0) + 1;
+
+      ffmpegProcesses[id]
+        .kill("SIGKILL");
+
+      delete ffmpegProcesses[id];
+    }
+
+    manuallyStopped[id] =
+      false;
+
+    advanceToNextSource(id);
+
+    res.json({
+      ok: true
+    });
+  }
+);
+
+// ======================================================
+// 🔢 اختيار مصدر محدد يدويًا
+// ======================================================
+//
+// GET /source?id=ch8&index=2
+//
+// index يبدأ من 0
+// ======================================================
+
+app.get(
+  "/source",
+  (req, res) => {
+
+    const id =
+      req.query.id;
+
+    const index =
+      Number(
+        req.query.index
+      );
+
+    if (!channels[id]) {
+
+      return res
+        .status(404)
+        .json({
+          ok: false
+        });
+    }
+
+    const sources =
+      getSources(
+        channels[id]
+      );
+
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= sources.length
+    ) {
+
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "رقم المصدر غير صحيح"
+        });
+    }
+
+    // إيقاف المصدر الحالي
+    if (
+      ffmpegProcesses[id]
+    ) {
+
+      streamGeneration[id] =
+        (streamGeneration[id] || 0) + 1;
+
+      ffmpegProcesses[id]
+        .kill("SIGKILL");
+
+      delete ffmpegProcesses[id];
+    }
+
+    manuallyStopped[id] =
+      false;
+
+    currentSourceIndex[id] =
+      index;
+
+    currentSourceTitle[id] =
+      sources[index].title;
+
+    sourceRetryCount[id] = 0;
+
+    spawnStream(
+      id,
+      index
+    );
+
+    res.json({
+      ok: true,
+
+      sourceIndex:
+        index,
+
+      sourceTitle:
+        sources[index].title
+    });
+  }
+);
+
+// ======================================================
+// 🗑️ DELETE CHANNEL
+// ======================================================
+
+app.delete(
+  "/channel/:id",
+  (req, res) => {
+
+    const id =
+      req.params.id;
+
+    manuallyStopped[id] =
+      true;
+
+    streamGeneration[id] =
+      (streamGeneration[id] || 0) + 1;
+
+    if (
+      ffmpegProcesses[id]
+    ) {
+
+      ffmpegProcesses[id]
+        .kill("SIGKILL");
+
+      delete ffmpegProcesses[id];
+    }
+
+    delete channels[id];
+
+    delete currentSourceIndex[id];
+
+    delete currentSourceTitle[id];
+
+    delete sourceRetryCount[id];
+
+    delete liveSince[id];
+
+    delete lastBitrateKbps[id];
+
+    res.json({
+      ok: true
+    });
+  }
+);
+
+// ======================================================
+// 🚀 SERVER
+// ======================================================
+
+const port =
+  process.env.PORT || 3000;
+
+const server =
+  app.listen(
+    port,
+    () => {
+
+      console.log(
+        "🚀 IPTV PRO RUNNING ON PORT",
+        port
+      );
+    }
+  );
+
+// ======================================================
+// 🔌 WEBSOCKET SERVER
+// ======================================================
+
+const wss =
+  new WebSocketServer({
+    server
+  });
+
+wss.on(
+  "connection",
+  ws => {
+
+    clients.push(ws);
+
+    // إرسال الحالة فور الاتصال
+    try {
+
+      const result = {};
+
+      for (
+        const id in channels
+      ) {
+
+        const active =
+          !!ffmpegProcesses[id];
+
+        const currentSessionMs =
+          active &&
+          liveSince[id]
+            ? Date.now() -
+              liveSince[id]
+            : 0;
+
+        const sources =
+          getSources(
+            channels[id]
+          );
+
+        result[id] = {
+
+          active,
+
+          uptimeSeconds:
+            Math.floor(
+              currentSessionMs /
+              1000
+            ),
+
+          totalSeconds:
+            Math.floor(
+              (
+                (totalOnairMs[id] || 0) +
+                currentSessionMs
+              ) / 1000
+            ),
+
+          bitrateKbps:
+            active
+              ? (
+                  lastBitrateKbps[id] ||
+                  null
+                )
+              : null,
+
+          currentViewers:
+            currentViewerLog[id]
+              ? currentViewerLog[id].size
+              : 0,
+
+          totalViewers:
+            totalViewerSet[id]
+              ? totalViewerSet[id].size
+              : 0,
+
+          sourceIndex:
+            sources.length
+              ? (
+                  currentSourceIndex[id] ??
+                  0
+                )
+              : null,
+
+          sourceNumber:
+            sources.length
+              ? (
+                  (currentSourceIndex[id] ??
+                  0) + 1
+                )
+              : null,
+
+          sourceTitle:
+            currentSourceTitle[id] ||
+            null,
+
+          sourceCount:
+            sources.length,
+
+          loopSources:
+            !!channels[id].loopSources
+        };
+      }
+
+      ws.send(
+        JSON.stringify({
+          type: "status",
+          data: result
+        })
+      );
+
+    } catch {}
+    
+    ws.on(
+      "close",
+      () => {
+
+        clients =
+          clients.filter(
+            client =>
+              client !== ws
+          );
+      }
+    );
+  }
+);
+
+// ======================================================
+// 📡 BROADCAST STATUS
+// ======================================================
+
+setInterval(
+  () => {
+
+    broadcastStatus();
+
+  },
+  2000
+);
 
 // ===============================
 // 📡 DASHBOARD PRO
