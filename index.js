@@ -366,9 +366,9 @@ function getLogo(id) {
 
   const logos = {
 
+    chyt1: "logo4kh.png",
     ch4k: "logo4kh.png",
-
-    ch1: "logo1.png",
+    ch1: "",
     ch2: "logo22.png",
     ch3: "logo33.png",
     ch4: "logo44.png",
