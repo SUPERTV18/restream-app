@@ -186,7 +186,6 @@ const channels = {
     logo: "",
     category: "",
     watchUrl: ""
-  },
   }
 };
 
