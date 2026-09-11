@@ -2,11 +2,68 @@ import express from "express";
 import { spawn, execFile } from "child_process";
 import { promisify } from "util";
 import { WebSocketServer } from "ws";
+import fs from "fs";
+import path from "path";
 
 const execFileAsync = promisify(execFile);
 
 const app = express();
 app.use(express.json());
+
+// ======================
+// 💾 تخزين دائم على القرص (channels.json)
+// ======================
+// المسار قابل للتهيئة عن طريق متغير بيئة DATA_DIR
+// (ده مفيد جدًا لو ضفت Volume دائم في Railway لاحقًا — هتوجّه المتغير على مسار الـ Volume)
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
+const CHANNELS_FILE = path.join(DATA_DIR, "channels.json");
+
+function ensureDataDir() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.log("🔥 فشل إنشاء مجلد البيانات:", err.message);
+  }
+}
+
+// حفظ القنوات الحالية في ملف على القرص (تُستدعى بعد أي إضافة/تعديل/حذف)
+function saveChannelsToDisk() {
+  try {
+    ensureDataDir();
+    const tmpFile = CHANNELS_FILE + ".tmp";
+    // نكتب في ملف مؤقت الأول ثم نغيّر اسمه — عشان لو السيرفر وقع أثناء الكتابة
+    // ما يفضلش الملف الأساسي فاسد/ناقص
+    fs.writeFileSync(tmpFile, JSON.stringify(channels, null, 2), "utf8");
+    fs.renameSync(tmpFile, CHANNELS_FILE);
+  } catch (err) {
+    console.log("🔥 فشل حفظ القنوات على القرص:", err.message);
+  }
+}
+
+// تحميل القنوات المحفوظة من القرص عند بدء تشغيل السيرفر (لو الملف موجود)
+function loadChannelsFromDisk() {
+  try {
+    if (!fs.existsSync(CHANNELS_FILE)) {
+      console.log("ℹ️ لا يوجد ملف قنوات محفوظ مسبقًا — هيتم استخدام القنوات الافتراضية.");
+      return;
+    }
+
+    const raw = fs.readFileSync(CHANNELS_FILE, "utf8");
+    const saved = JSON.parse(raw);
+
+    if (saved && typeof saved === "object") {
+      // الملف المحفوظ هو المصدر الحقيقي بعد أول تشغيل — بنستبدل بيه القائمة الافتراضية بالكامل
+      for (const id in channels) delete channels[id];
+      for (const id in saved) channels[id] = saved[id];
+
+      console.log(`✅ تم تحميل ${Object.keys(saved).length} قناة من الملف المحفوظ على القرص (${CHANNELS_FILE}).`);
+    }
+  } catch (err) {
+    console.log("🔥 فشل تحميل القنوات من القرص (هيتم استخدام الافتراضية):", err.message);
+  }
+}
 
 // ======================
 // 🎯 STATE
@@ -188,6 +245,9 @@ const channels = {
     watchUrl: ""
   }
 };
+
+// تحميل أي قنوات محفوظة من مرات تشغيل سابقة (لو موجودة، هتستبدل القائمة الافتراضية فوق)
+loadChannelsFromDisk();
 
 // ======================
 // 🎬 LOGO (fallback ثابت لو القناة مالهاش لوجو محدد)
@@ -625,6 +685,8 @@ app.post("/channel", (req, res) => {
 
   playlistIndex[id] = 0;
 
+  saveChannelsToDisk();
+
   res.json({ ok: true });
 });
 
@@ -651,6 +713,8 @@ app.put("/channel/:id", (req, res) => {
 
   playlistIndex[id] = 0;
 
+  saveChannelsToDisk();
+
   res.json({ ok: true });
 });
 
@@ -664,6 +728,8 @@ app.delete("/channel/:id", (req, res) => {
 
   delete channels[id];
   delete playlistIndex[id];
+
+  saveChannelsToDisk();
 
   res.json({ ok: true });
 });
