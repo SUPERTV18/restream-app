@@ -1987,20 +1987,20 @@ const mvFn  = mode === "add" ? "moveAddRow"   : "moveEditRow";
 const rmFn  = mode === "add" ? "removeAddRow" : "removeEditRow";
 const idArg = mode === "add" ? "" : ("'" + channelId + "',");
 
-return rows.map((row,i) => `
+return rows.map((row,i) => \`
 <div class="plRow">
-<div class="plRowNum">${i+1}</div>
+<div class="plRowNum">\${i+1}</div>
 <div class="plRowFields">
-<input placeholder="اسم الفيلم أو المقطع" value="${escAttr(row.name)}" oninput="${updFn}(${idArg}${i},'name',this.value)">
-<input placeholder="رابط الفيديو أو MP3" value="${escAttr(row.url)}" oninput="${updFn}(${idArg}${i},'url',this.value)">
-<input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="${escAttr(row.image)}" oninput="${updFn}(${idArg}${i},'image',this.value)">
+<input placeholder="اسم الفيلم أو المقطع" value="\${escAttr(row.name)}" oninput="\${updFn}(\${idArg}\${i},'name',this.value)">
+<input placeholder="رابط الفيديو أو MP3" value="\${escAttr(row.url)}" oninput="\${updFn}(\${idArg}\${i},'url',this.value)">
+<input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="\${escAttr(row.image)}" oninput="\${updFn}(\${idArg}\${i},'image',this.value)">
 </div>
 <div class="plRowActions">
-<button type="button" onclick="${mvFn}(${idArg}${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
-<button type="button" onclick="${mvFn}(${idArg}${i},1)" title="لأسفل"><i class="ti ti-chevron-down"></i></button>
-<button type="button" class="plRemove" onclick="${rmFn}(${idArg}${i})" title="حذف"><i class="ti ti-x"></i></button>
+<button type="button" onclick="\${mvFn}(\${idArg}\${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
+<button type="button" onclick="\${mvFn}(\${idArg}\${i},1)" title="لأسفل"><i class="ti ti-chevron-down"></i></button>
+<button type="button" class="plRemove" onclick="\${rmFn}(\${idArg}\${i})" title="حذف"><i class="ti ti-x"></i></button>
 </div>
-</div>`).join("");
+</div>\`).join("");
 }
 
 // ---- صفوف نموذج "إضافة قناة" ----
@@ -2289,7 +2289,7 @@ box.innerHTML += \`
 \${[["0","الأحد"],["1","الاثنين"],["2","الثلاثاء"],["3","الأربعاء"],["4","الخميس"],["5","الجمعة"],["6","السبت"]].map(([val,label]) => {
 const currentDays = editDraft[id]?.scheduleDays ?? (ch.schedule?.days || []);
 const checked = currentDays.map(String).includes(val) ? 'checked' : '';
-return '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text-2);margin:0"><input type="checkbox" class="eSchedDay-'+id+'" value="'+val+'" style="width:auto" '+checked+' onchange="updateEditScheduleDays(\\''+id+'\\')">'+label+'</label>';
+return '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text-2);margin:0"><input type="checkbox" class="eSchedDay-'+id+'" value="'+val+'" style="width:auto" '+checked+' onchange="updateEditScheduleDays(\''+id+'\')">'+label+'</label>';
 }).join('')}
 </div>
 <div style="display:flex;gap:6px">
