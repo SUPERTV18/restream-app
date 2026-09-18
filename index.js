@@ -100,18 +100,110 @@ let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من
 // ======================
 let playlistIndex = {}; // id -> index الحالي في قائمة التشغيل
 
-// تحويل سطر نصي "اسم الفيلم | الرابط" إلى { name, url }
-// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون اسم (توافق مع الشكل القديم)
+// تحويل سطر نصي "اسم | الرابط | رابط الصورة (اختياري)" إلى { name, url, image }
+// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون اسم ولا صورة (توافق مع الشكل القديم)
 function parsePlaylistLine(line) {
-  const parts = line.split("|");
-  if (parts.length >= 2) {
-    return {
-      name: parts[0].trim(),
-      url: parts.slice(1).join("|").trim()
-    };
+  const parts = line.split("|").map(p => p.trim());
+  if (parts.length >= 3) {
+    return { name: parts[0], url: parts[1], image: parts.slice(2).join("|").trim() };
   }
-  return { name: "", url: line.trim() };
+  if (parts.length === 2) {
+    return { name: parts[0], url: parts[1], image: "" };
+  }
+  return { name: "", url: parts[0], image: "" };
 }
+
+// امتدادات الصوت المعروفة — لو الرابط بينتهي بيها، هيتعامل معاه كمصدر صوتي (يحتاج صورة بدل الفيديو)
+const AUDIO_EXTENSIONS = [".mp3", ".aac", ".wav", ".m4a", ".ogg", ".flac", ".opus"];
+
+function isAudioUrl(url) {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    return AUDIO_EXTENSIONS.some(ext => pathname.endsWith(ext));
+  } catch (e) {
+    const lower = String(url || "").toLowerCase().split("?")[0];
+    return AUDIO_EXTENSIONS.some(ext => lower.endsWith(ext));
+  }
+}
+
+// ======================
+// 🗓️ الجدولة (Scheduler)
+// شكل بيانات الجدولة المخزّنة لكل قناة:
+// { enabled: bool, days: [0-6] (0=الأحد ... 6=السبت), start: "HH:MM", stop: "HH:MM" }
+// ملحوظة: التوقيت بيتحسب حسب ساعة السيرفر نفسه — لو محتاج توقيت مصر تحديدًا،
+// ظبط متغير بيئة TZ=Africa/Cairo وقت رفع السيرفر.
+// ======================
+function parseScheduleInput(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const days = Array.isArray(raw.days)
+    ? raw.days.map(d => parseInt(d, 10)).filter(d => Number.isInteger(d) && d >= 0 && d <= 6)
+    : [];
+
+  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const start = timeRe.test(raw.start) ? raw.start : "00:00";
+  const stop = timeRe.test(raw.stop) ? raw.stop : "23:59";
+
+  if (!raw.enabled || days.length === 0) {
+    return { enabled: false, days, start, stop };
+  }
+
+  return { enabled: true, days, start, stop };
+}
+
+// بيرجع true لو دلوقتي جوه وقت الجدولة، false لو برّاه، null لو مفيش جدولة مفعّلة أصلًا
+function isWithinSchedule(schedule) {
+  if (!schedule || !schedule.enabled || !schedule.days || schedule.days.length === 0) return null;
+
+  const now = new Date();
+  const day = now.getDay();
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+
+  const [sh, sm] = schedule.start.split(":").map(Number);
+  const [eh, em] = schedule.stop.split(":").map(Number);
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+
+  for (const d of schedule.days) {
+    if (startMin <= endMin) {
+      // نفس اليوم: بداية ونهاية في نفس اليوم
+      if (day === d && minutesNow >= startMin && minutesNow < endMin) return true;
+    } else {
+      // نطاق يعدّي منتصف الليل (مثلاً 22:00 -> 02:00)
+      if (day === d && minutesNow >= startMin) return true;
+      if (day === (d + 1) % 7 && minutesNow < endMin) return true;
+    }
+  }
+
+  return false;
+}
+
+// فحص دوري لكل القنوات وتشغيل/إيقاف اللي عليها جدولة مفعّلة حسب الوقت الحالي
+function checkSchedules() {
+  for (const id in channels) {
+    const ch = channels[id];
+    const within = isWithinSchedule(ch.schedule);
+
+    if (within === null) continue; // القناة دي مالهاش جدولة — تتحكم فيها يدويًا زي العادة
+
+    const active = !!ffmpegProcesses[id];
+
+    if (within && !active) {
+      console.log(`🗓️ [${id}] بداية وقت الجدولة — تشغيل تلقائي`);
+      spawnStream(id);
+    } else if (!within && active) {
+      console.log(`🗓️ [${id}] انتهى وقت الجدولة — إيقاف تلقائي`);
+      manuallyStopped[id] = true;
+      if (ffmpegProcesses[id]) {
+        ffmpegProcesses[id].kill("SIGKILL");
+        delete ffmpegProcesses[id];
+        logEvent(id, "stop", "تم الإيقاف تلقائيًا حسب الجدولة");
+      }
+    }
+  }
+}
+
+setInterval(checkSchedules, 30000);
 
 // تجهيز نص العنوان عشان يتحط جوه فلتر drawtext بتاع ffmpeg من غير ما يبوّظ الفلتر
 function escapeDrawtext(text) {
@@ -129,12 +221,12 @@ function getChannelSources(ch) {
   return [{ name: "", url: ch.input }];
 }
 
-// استخراج { name, url } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
+// استخراج { name, url, image } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
 function normalizeSource(rawSource) {
   if (typeof rawSource === "string") {
-    return { name: "", url: rawSource };
+    return { name: "", url: rawSource, image: "" };
   }
-  return { name: rawSource?.name || "", url: rawSource?.url || "" };
+  return { name: rawSource?.name || "", url: rawSource?.url || "", image: rawSource?.image || "" };
 }
 
 // ======================
@@ -465,11 +557,44 @@ async function spawnStream(id) {
     ? `;[merged]drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='${escapeDrawtext(currentTitle)}':fontsize=26:fontcolor=${titleColor}:shadowcolor=black@0.8:shadowx=2:shadowy=2:x=20:y=${titleY}[base]`
     : `;[merged]copy[base]`;
 
-  const filterComplex =
-    `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
-    `[1:v]scale=-1:3000[logo];` +
-    `[bg][logo]overlay=W-w-2:2[merged]` +
-    titleFilter;
+  // ======================
+  // 🎧 وضع الصوت (mp3/aac/wav...) + صورة ثابتة بدل الفيديو
+  // ======================
+  const { image: currentImage } = normalizeSource(rawSource);
+  const audioMode = isAudioUrl(rawUrl);
+  const stillImage = (currentImage || ch.audioImage || getLogo(id) || "").trim();
+
+  let filterComplex;
+  let ffmpegInputArgs;
+  let ffmpegMapArgs;
+  let extraEncodeArgs = [];
+
+  if (audioMode) {
+    // مصدر الفيديو: صورة ثابتة (لو موجودة) أو خلفية سودا لو مفيش صورة خالص
+    ffmpegInputArgs = stillImage
+      ? ["-loop", "1", "-i", stillImage, "-i", resolvedInput, "-i", getLogo(id)]
+      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, "-i", resolvedInput, "-i", getLogo(id)];
+
+    filterComplex =
+      `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
+      `[2:v]scale=-1:3000[logo];` +
+      `[bg][logo]overlay=W-w-2:2[merged]` +
+      titleFilter;
+
+    ffmpegMapArgs = ["-map", "[base]", "-map", "1:a"];
+    // الصورة بتتكرر بلا نهاية، فلازم نوقف البث لما الصوت يخلص عشان تنتقل القائمة للمقطع اللي بعده
+    extraEncodeArgs = ["-shortest"];
+  } else {
+    ffmpegInputArgs = ["-i", resolvedInput, "-i", getLogo(id)];
+
+    filterComplex =
+      `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
+      `[1:v]scale=-1:3000[logo];` +
+      `[bg][logo]overlay=W-w-2:2[merged]` +
+      titleFilter;
+
+    ffmpegMapArgs = ["-map", "[base]", "-map", "0:a?"];
+  }
 
   const ffmpeg = spawn("ffmpeg", [
     "-re",
@@ -478,18 +603,16 @@ async function spawnStream(id) {
     "-reconnect_streamed", "1",
     "-reconnect_delay_max", "5",
 
-    "-i", resolvedInput,
-    "-i", getLogo(id),
+    ...ffmpegInputArgs,
 
     "-filter_complex",
     filterComplex,
 
-    "-map", "[base]",
-    "-map", "0:a?",
+    ...ffmpegMapArgs,
 
     "-c:v", "libx264",
 "-preset", q.preset,
-"-tune", "zerolatency",
+"-tune", audioMode ? "stillimage" : "zerolatency",
 
 "-pix_fmt", "yuv420p",
 
@@ -505,6 +628,8 @@ async function spawnStream(id) {
 
     "-c:a", "aac",
     "-b:a", "128k",
+
+    ...extraEncodeArgs,
 
     "-f", "flv",
     ch.output
@@ -724,7 +849,7 @@ app.get("/channels", (req, res) => {
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor } = req.body;
+  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage } = req.body;
 
   const cleanPlaylist = Array.isArray(playlist)
     ? playlist.map(l => (l || "").trim()).filter(Boolean).map(parsePlaylistLine)
@@ -742,7 +867,9 @@ app.post("/channel", (req, res) => {
     quality: QUALITY_PRESETS[quality] ? quality : "high",
     playlist: cleanPlaylist,
     titlePosition: titlePosition === "top" ? "top" : "bottom",
-    titleColor: (titleColor || "").trim() || "white"
+    titleColor: (titleColor || "").trim() || "white",
+    audioImage: (audioImage || "").trim(),
+    schedule: parseScheduleInput(req.body.schedule)
   };
 
   playlistIndex[id] = 0;
@@ -772,7 +899,9 @@ app.put("/channel/:id", (req, res) => {
     quality: QUALITY_PRESETS[req.body.quality] ? req.body.quality : (channels[id].quality || "high"),
     playlist: cleanPlaylist,
     titlePosition: req.body.titlePosition === "top" ? "top" : (req.body.titlePosition === "bottom" ? "bottom" : (channels[id].titlePosition || "bottom")),
-    titleColor: req.body.titleColor !== undefined ? ((req.body.titleColor || "").trim() || "white") : (channels[id].titleColor || "white")
+    titleColor: req.body.titleColor !== undefined ? ((req.body.titleColor || "").trim() || "white") : (channels[id].titleColor || "white"),
+    audioImage: req.body.audioImage !== undefined ? (req.body.audioImage || "").trim() : (channels[id].audioImage || ""),
+    schedule: req.body.schedule !== undefined ? parseScheduleInput(req.body.schedule) : (channels[id].schedule || null)
   };
 
   playlistIndex[id] = 0;
@@ -1556,10 +1685,15 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_input" placeholder="rtmp:// or http://...">
 <div class="hint">تقدر تحط رابط بث مباشر على يوتيوب مباشرة (youtube.com/watch?v=... أو youtube.com/live/...) والسيرفر يستخرج رابط البث الحقيقي منه تلقائي. اتركه فاضي لو هتستخدم "قائمة تشغيل" تحت.</div>
 
-<label>قائمة تشغيل (أفلام/مسلسلات — اسم الفيلم | الرابط، في كل سطر)</label>
+<label>قائمة تشغيل (أفلام/مسلسلات/مقاطع صوتية — اسم | الرابط | رابط صورة (اختياري)، في كل سطر)</label>
 <textarea id="f_playlist" placeholder="فيلم الأول | https://.../movie1.mp4
-فيلم الثاني | https://.../movie2.mp4"></textarea>
-<div class="hint">اختياري — لو ضفت أكتر من سطر هنا، القناة تشغّل الروابط بالترتيب وتنتقل تلقائي للي بعده أول ما اللي قبله يخلص، وترجع تدور من الأول تاني. الاسم قبل "|" هيظهر مكتوب فوق الفيديو وقت عرض هذا الفيلم، وهيتغير تلقائي مع كل فيلم جديد. لو مش عايز تكتب اسم، سيب الجزء ده فاضي وحط الرابط لوحده. لو ملّيت الحقل ده، رابط البث فوق مش هيتستخدم.</div>
+فيلم الثاني | https://.../movie2.mp4
+أغنية | https://.../song.mp3 | https://.../cover.jpg"></textarea>
+<div class="hint">اختياري — لو ضفت أكتر من سطر هنا، القناة تشغّل الروابط بالترتيب وتنتقل تلقائي للي بعده أول ما اللي قبله يخلص، وترجع تدور من الأول تاني. الاسم قبل أول "|" هيظهر مكتوب فوق الفيديو، وهيتغير تلقائي مع كل عنصر جديد. لو الرابط صوت (mp3, aac, wav...)، السيرفر يعرض صورة بدل الفيديو أثناء تشغيله — حط رابط الصورة بعد "|" التانية، أو سيبها فاضية ويستخدم "الصورة الافتراضية للصوتيات" تحت. لو ملّيت الحقل ده، رابط البث فوق مش هيتستخدم.</div>
+
+<label>الصورة الافتراضية للمقاطع الصوتية (لو مالهاش صورة خاصة بيها)</label>
+<input id="f_audioImage" placeholder="https://.../default-cover.jpg">
+<div class="hint">اختياري — تستخدم لو مقطع mp3 في القائمة مالوش رابط صورة خاص بيه. لو سبتها فاضية برضو، هيستخدم لوجو القناة.</div>
 
 <label>مكان اسم الفيلم على الشاشة</label>
 <select id="f_titlePosition">
@@ -1573,6 +1707,32 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_titleColor" placeholder="white أو #FFFFFF" value="white" style="flex:1">
 </div>
 <div class="hint">اكتب اسم لون إنجليزي (white, yellow, red...) أو اختار من مربع اللون، أو اكتب كود Hex بنفسك</div>
+
+<label>جدولة البث (تشغيل/إيقاف تلقائي حسب الوقت)</label>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<input type="checkbox" id="f_scheduleEnabled" style="width:auto">
+<span style="font-size:12.5px;color:var(--text-2)">تفعيل الجدولة لهذه القناة</span>
+</div>
+<div id="f_scheduleDays" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;direction:rtl">
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="0" style="width:auto">الأحد</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="1" style="width:auto">الاثنين</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="2" style="width:auto">الثلاثاء</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="3" style="width:auto">الأربعاء</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="4" style="width:auto">الخميس</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="5" style="width:auto">الجمعة</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-2);margin:0"><input type="checkbox" class="schedDay" value="6" style="width:auto">السبت</label>
+</div>
+<div style="display:flex;gap:8px">
+<div style="flex:1">
+<div class="hint" style="margin:0 0 4px">من الساعة</div>
+<input type="time" id="f_scheduleStart" value="00:00">
+</div>
+<div style="flex:1">
+<div class="hint" style="margin:0 0 4px">لحد الساعة</div>
+<input type="time" id="f_scheduleStop" value="23:59">
+</div>
+</div>
+<div class="hint">اختياري — لو فعّلتها، القناة هتشتغل وتوقف لوحدها تلقائيًا في الأيام والأوقات دي (حسب ساعة السيرفر). لو معطّلة، تتحكم في التشغيل/الإيقاف يدويًا زي العادة.</div>
 
 <label>رابط الإخراج (RTMP Output)</label>
 <input id="f_output" placeholder="rtmp://...">
@@ -1650,6 +1810,11 @@ if(!editDraft[id]) editDraft[id] = {};
 editDraft[id][field] = val;
 }
 
+function updateEditScheduleDays(id){
+const checked = Array.from(document.querySelectorAll(".eSchedDay-" + id + ":checked")).map(el => el.value);
+updateDraft(id, "scheduleDays", checked);
+}
+
 function imgFallback(el){
 el.parentElement.innerHTML = '<i class="ti ti-device-tv"></i>';
 }
@@ -1683,12 +1848,14 @@ if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
 return m + ":" + pad(s);
 }
 
-// عرض الـ playlist المخزّن (مصفوفة { name, url } أو نصوص قديمة) كسطر "اسم | رابط" في التعديل
+// عرض الـ playlist المخزّن (مصفوفة { name, url, image } أو نصوص قديمة) كسطر "اسم | رابط | صورة" في التعديل
 function playlistToText(playlist){
 return (playlist || []).map(item => {
 if (typeof item === "string") return item;
 const name = item?.name || "";
 const url = item?.url || "";
+const image = item?.image || "";
+if (image) return (name || "") + " | " + url + " | " + image;
 return name ? (name + " | " + url) : url;
 }).join("\\n");
 }
@@ -1900,6 +2067,30 @@ box.innerHTML += \`
 </div>
 
 <div class="editField">
+<div class="tLbl">الصورة الافتراضية للمقاطع الصوتية (mp3 بدون صورة خاصة بيها)</div>
+<input value="\${(editDraft[id]?.audioImage ?? ch.audioImage ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','audioImage',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">جدولة البث</div>
+<label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2);margin-bottom:8px">
+<input type="checkbox" style="width:auto" \${(editDraft[id]?.scheduleEnabled ?? ch.schedule?.enabled) ? 'checked' : ''} onchange="updateDraft('\${id}','scheduleEnabled',this.checked)">
+تفعيل الجدولة
+</label>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+\${[["0","الأحد"],["1","الاثنين"],["2","الثلاثاء"],["3","الأربعاء"],["4","الخميس"],["5","الجمعة"],["6","السبت"]].map(([val,label]) => {
+const currentDays = editDraft[id]?.scheduleDays ?? (ch.schedule?.days || []);
+const checked = currentDays.map(String).includes(val) ? 'checked' : '';
+return '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text-2);margin:0"><input type="checkbox" class="eSchedDay-'+id+'" value="'+val+'" style="width:auto" '+checked+' onchange="updateEditScheduleDays(\\''+id+'\\')">'+label+'</label>';
+}).join('')}
+</div>
+<div style="display:flex;gap:6px">
+<input type="time" value="\${editDraft[id]?.scheduleStart ?? ch.schedule?.start ?? '00:00'}" oninput="updateDraft('\${id}','scheduleStart',this.value)">
+<input type="time" value="\${editDraft[id]?.scheduleStop ?? ch.schedule?.stop ?? '23:59'}" oninput="updateDraft('\${id}','scheduleStop',this.value)">
+</div>
+</div>
+
+<div class="editField">
 <div class="tLbl">RTMP OUTPUT</div>
 <input value="\${(editDraft[id]?.output ?? ch.output ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','output',this.value)">
 </div>
@@ -1961,6 +2152,13 @@ box.innerHTML += \`
 <div class="techLine">
 <div class="tLbl">قائمة التشغيل</div>
 <span class="tVal">🎬 \${currentTitle ? currentTitle + ' — ' : ''}الرابط \${playlistPosition||1} من \${playlistTotal||ch.playlist.length} — بينتقل تلقائي لما يخلص</span>
+</div>
+\` : '' }
+
+\${ ch.schedule && ch.schedule.enabled ? \`
+<div class="techLine">
+<div class="tLbl">الجدولة</div>
+<span class="tVal">🗓️ \${["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].filter((_,i)=>(ch.schedule.days||[]).includes(i)).join('، ') || 'بدون أيام محددة'} — \${ch.schedule.start} إلى \${ch.schedule.stop}</span>
 </div>
 \` : '' }
 
@@ -2171,6 +2369,12 @@ const watchUrl = document.getElementById("f_watchUrl").value.trim();
 const quality = document.getElementById("f_quality").value;
 const titlePosition = document.getElementById("f_titlePosition").value;
 const titleColor = document.getElementById("f_titleColor").value.trim() || "white";
+const audioImage = document.getElementById("f_audioImage").value.trim();
+const scheduleEnabled = document.getElementById("f_scheduleEnabled").checked;
+const scheduleDays = Array.from(document.querySelectorAll(".schedDay:checked")).map(el => parseInt(el.value, 10));
+const scheduleStart = document.getElementById("f_scheduleStart").value || "00:00";
+const scheduleStop = document.getElementById("f_scheduleStop").value || "23:59";
+const schedule = { enabled: scheduleEnabled, days: scheduleDays, start: scheduleStart, stop: scheduleStop };
 const playlistRaw = document.getElementById("f_playlist").value.trim();
 const playlist = playlistRaw ? playlistRaw.split("\\n").map(l => l.trim()).filter(Boolean) : [];
 
@@ -2179,10 +2383,15 @@ alert("من فضلك املأ معرف القناة، رابط الإخراج، 
 return;
 }
 
+if(scheduleEnabled && scheduleDays.length === 0){
+alert("فعّلت الجدولة بس ما اخترتش أي يوم — اختار يوم واحد على الأقل أو ألغِ تفعيل الجدولة");
+return;
+}
+
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor })
+body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, schedule })
 });
 
 document.getElementById("f_id").value = "";
@@ -2195,6 +2404,11 @@ document.getElementById("f_quality").value = "high";
 document.getElementById("f_titlePosition").value = "bottom";
 document.getElementById("f_titleColor").value = "white";
 document.getElementById("f_titleColorPicker").value = "#ffffff";
+document.getElementById("f_audioImage").value = "";
+document.getElementById("f_scheduleEnabled").checked = false;
+document.querySelectorAll(".schedDay").forEach(el => el.checked = false);
+document.getElementById("f_scheduleStart").value = "00:00";
+document.getElementById("f_scheduleStop").value = "23:59";
 document.getElementById("f_playlist").value = "";
 
 load();
@@ -2216,7 +2430,12 @@ category: channelsCache[id].category || "",
 watchUrl: channelsCache[id].watchUrl || "",
 playlist: playlistToText(channelsCache[id].playlist),
 titlePosition: channelsCache[id].titlePosition || "bottom",
-titleColor: channelsCache[id].titleColor || "white"
+titleColor: channelsCache[id].titleColor || "white",
+audioImage: channelsCache[id].audioImage || "",
+scheduleEnabled: channelsCache[id].schedule?.enabled || false,
+scheduleDays: (channelsCache[id].schedule?.days || []).map(String),
+scheduleStart: channelsCache[id].schedule?.start || "00:00",
+scheduleStop: channelsCache[id].schedule?.stop || "23:59"
 };
 editingId = id;
 render();
@@ -2227,6 +2446,18 @@ const draft = editDraft[id] || {};
 const playlist = (draft.playlist || "").trim()
 ? draft.playlist.trim().split("\\n").map(l => l.trim()).filter(Boolean)
 : [];
+
+const schedule = {
+enabled: draft.scheduleEnabled ?? channelsCache[id].schedule?.enabled ?? false,
+days: (draft.scheduleDays ?? (channelsCache[id].schedule?.days || [])).map(d => parseInt(d, 10)),
+start: draft.scheduleStart ?? channelsCache[id].schedule?.start ?? "00:00",
+stop: draft.scheduleStop ?? channelsCache[id].schedule?.stop ?? "23:59"
+};
+
+if(schedule.enabled && schedule.days.length === 0){
+alert("فعّلت الجدولة بس ما اخترتش أي يوم — اختار يوم واحد على الأقل أو ألغِ تفعيل الجدولة");
+return;
+}
 
 await fetch("/channel/"+id,{
 method:"PUT",
@@ -2240,6 +2471,8 @@ watchUrl: draft.watchUrl ?? "",
 quality: draft.quality ?? channelsCache[id].quality ?? "high",
 titlePosition: draft.titlePosition ?? channelsCache[id].titlePosition ?? "bottom",
 titleColor: draft.titleColor ?? channelsCache[id].titleColor ?? "white",
+audioImage: draft.audioImage ?? channelsCache[id].audioImage ?? "",
+schedule,
 playlist
 })
 });
