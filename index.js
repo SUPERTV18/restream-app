@@ -329,7 +329,7 @@ const channels = {
     watchUrl: ""
   },
   ch7: {
-    input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
+    input: "https://server8.mp3quran.net/afs/002.mp3",
     output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
     logo: "quran3.png",
     category: "دينية",
