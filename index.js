@@ -280,91 +280,91 @@ function logEvent(id, type, message) {
 // ======================
 const channels = {
   ch4k: {
-    input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
-    output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0",
+    input: "",
+    output: "",
     logo: "logo4kh.png",
     category: "",
     watchUrl: ""
   },
   ch1: {
-    input: "https://163.ostv.info/krikar/krikar/652333?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
-    output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm",
+    input: "",
+    output: "",
     logo: "logo1.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_1.m3u8"
+    watchUrl: ""
   },
   ch2: {
-    input: "https://163.ostv.info/krikar/krikar/652334?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
-    output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy",
+    input: "",
+    output: "",
     logo: "logo22.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_2.m3u8"
+    watchUrl: ""
   },
   ch3: {
-    input: "https://163.ostv.info/krikar/krikar/652335?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
-    output: "rtmp://vsu.okcdn.ru/input/15651304709717_17641796995669_ozpan4c55m",
+    input: "",
+    output: "",
     logo: "logo33.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_3.m3u8"
+    watchUrl: ""
   },
   ch4: {
-    input: "https://163.ostv.info/krikar/krikar/652336?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
-    output: "rtmp://vsu.okcdn.ru/input/15651325025877_17641833499221_yp3cn26lt4",
+    input: "",
+    output: "",
     logo: "logo44.png",
     category: "رياضة",
-    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_4.m3u8"
+    watchUrl: ""
   },
   ch5: {
-    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/14863707479574_16379956300310_uoslkp4xrm",
+    input: "",
+    output: "",
     logo: "logo55.png",
     category: "",
     watchUrl: ""
   },
   ch6: {
-    input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
-    output: "rtmp://vsu.okcdn.ru/input/14901168119318_16447213341206_ssfncxg2zu",
+    input: "",
+    output: "",
     logo: "logo66.png",
     category: "",
     watchUrl: ""
   },
   ch7: {
-    input: "https://server8.mp3quran.net/afs/002.mp3",
-    output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
+    input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
+    output: "",
     logo: "quran3.png",
     category: "دينية",
     watchUrl: ""
   },
   ch8: {
-    input: "https://blc2cr.linkip.org/live/90055_.m3u8?play=",
-    output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
+    input: "",
+    output: "",
     logo: "aflam3.png",
     category: "أفلام",
     watchUrl: ""
   },
   ch9: {
-    input: "https://blc2cr.linkip.org/live/90131_.m3u8?play",
-    output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
+    input: "",
+    output: "",
     logo: "mosalsalat2.png",
     category: "مسلسلات",
     watchUrl: ""
   },
   ch10: {
-    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
-    output: "rtmp://vsu.okcdn.ru/input/14994479390230_16613027809814_7sovqbfsba",
+    input: "",
+    output: "",
     logo: "animy.png",
     category: "أنمي",
     watchUrl: ""
   },
   ch11: {
-    input: "https://blc2cr.linkip.org/live/90068_.m3u8?play",
-    output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
+    input: "",
+    output: "",
     logo: "kids3.png",
     category: "أطفال",
     watchUrl: ""
       },
    chyt1: {
-    input: "https://www.youtube.com/live/7DHNbnPMNiM?si=Ypmmu60JMR9OtlNa",
+    input: "",
     output: "",
     logo: "",
     category: "",
