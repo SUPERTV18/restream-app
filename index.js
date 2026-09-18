@@ -1437,110 +1437,6 @@ min-height:90px;
 
 .formCard .hint{ font-size:11px; color:var(--text-3); margin-top:4px; }
 
-/* ---------- playlist rows (professional multi-field playlist builder) ---------- */
-
-.plRows{ display:flex; flex-direction:column; gap:8px; }
-
-.plRow{
-display:flex;
-align-items:flex-start;
-gap:8px;
-background:var(--surface-2);
-border:1px solid var(--border);
-border-radius:10px;
-padding:10px;
-transition:0.12s;
-}
-
-.plRow:hover{ border-color:var(--border-strong); }
-
-.plRowNum{
-flex-shrink:0;
-width:22px;
-height:22px;
-border-radius:6px;
-background:var(--accent-bg);
-color:var(--accent);
-font-family:'IBM Plex Mono', monospace;
-font-size:11px;
-font-weight:600;
-display:flex;
-align-items:center;
-justify-content:center;
-margin-top:2px;
-}
-
-.plRowFields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
-
-.plRowFields input{
-width:100%;
-padding:8px 10px;
-border-radius:7px;
-border:1px solid var(--border);
-background:var(--surface);
-color:var(--text);
-outline:none;
-font-family:'IBM Plex Mono', monospace;
-font-size:12px;
-direction:ltr;
-text-align:left;
-}
-
-.plRowFields input:focus{ border-color:var(--accent); }
-
-.plRowFields input:first-child{
-font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
-direction:rtl;
-text-align:right;
-font-size:12.5px;
-font-weight:500;
-}
-
-.plRowFields input::placeholder{ color:var(--text-3); }
-
-.plRowActions{ display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
-
-.plRowActions button{
-width:26px;
-height:26px;
-display:flex;
-align-items:center;
-justify-content:center;
-border-radius:6px;
-border:1px solid var(--border);
-background:var(--surface);
-color:var(--text-3);
-cursor:pointer;
-font-size:12px;
-padding:0;
-}
-
-.plRowActions button:hover{ border-color:var(--border-strong); color:var(--text-2); background:var(--surface-2); }
-.plRowActions button.plRemove:hover{ color:var(--danger); border-color:var(--danger); background:var(--danger-bg); }
-
-.plAddBtn{
-display:flex;
-align-items:center;
-justify-content:center;
-gap:6px;
-width:100%;
-margin-top:10px;
-padding:10px;
-border-radius:9px;
-border:1.5px dashed var(--border-strong);
-background:transparent;
-color:var(--accent);
-font-family:'IBM Plex Sans Arabic', Arial, sans-serif;
-font-weight:600;
-font-size:13px;
-cursor:pointer;
-}
-
-.plAddBtn:hover{ background:var(--accent-bg); border-style:solid; }
-
-.plRowsEdit{ margin-bottom:4px; }
-.plRowsEdit .plRowFields input{ font-size:11.5px; padding:7px 9px; }
-
 .formCard .submit{
 margin-top:20px;
 width:100%;
@@ -1792,10 +1688,11 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_input" placeholder="rtmp:// or http://...">
 <div class="hint">تقدر تحط رابط بث مباشر على يوتيوب مباشرة (youtube.com/watch?v=... أو youtube.com/live/...) والسيرفر يستخرج رابط البث الحقيقي منه تلقائي. اتركه فاضي لو هتستخدم "قائمة تشغيل" تحت.</div>
 
-<label>قائمة تشغيل (أفلام / مسلسلات / مقاطع صوتية)</label>
-<div class="hint" style="margin-top:0;margin-bottom:8px">أضف كل فيلم أو مقطع في صف مستقل: اسمه، رابطه، وصورة اختيارية (للمقاطع الصوتية mp3 فقط). رتّبهم بالأسهم، والاسم هيظهر مكتوب فوق الفيديو وهيتغيّر تلقائي مع كل عنصر جديد.</div>
-<div id="f_playlist_rows" class="plRows"></div>
-<button type="button" class="plAddBtn" onclick="addAddRow()"><i class="ti ti-plus"></i>إضافة فيلم / مقطع</button>
+<label>قائمة تشغيل (أفلام/مسلسلات/مقاطع صوتية — اسم | الرابط | رابط صورة (اختياري)، في كل سطر)</label>
+<textarea id="f_playlist" placeholder="فيلم الأول | https://.../movie1.mp4
+فيلم الثاني | https://.../movie2.mp4
+أغنية | https://.../song.mp3 | https://.../cover.jpg"></textarea>
+<div class="hint">اختياري — لو ضفت أكتر من سطر هنا، القناة تشغّل الروابط بالترتيب وتنتقل تلقائي للي بعده أول ما اللي قبله يخلص، وترجع تدور من الأول تاني. الاسم قبل أول "|" هيظهر مكتوب فوق الفيديو، وهيتغير تلقائي مع كل عنصر جديد. لو الرابط صوت (mp3, aac, wav...)، السيرفر يعرض صورة بدل الفيديو أثناء تشغيله — حط رابط الصورة بعد "|" التانية، أو سيبها فاضية ويستخدم "الصورة الافتراضية للصوتيات" تحت. لو ملّيت الحقل ده، رابط البث فوق مش هيتستخدم.</div>
 
 <label>الصورة الافتراضية للمقاطع الصوتية (لو مالهاش صورة خاصة بيها)</label>
 <input id="f_audioImage" placeholder="https://.../default-cover.jpg">
@@ -1954,117 +1851,16 @@ if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
 return m + ":" + pad(s);
 }
 
-// عرض الـ playlist المخزّن (مصفوفة { name, url, image } أو نصوص قديمة) كصفوف { name, url, image } جاهزة للتعديل
-function playlistToRows(playlist){
-const rows = (playlist || []).map(item => {
-if (typeof item === "string") return { name: "", url: item, image: "" };
-return { name: item?.name || "", url: item?.url || "", image: item?.image || "" };
-});
-return rows.length > 0 ? rows : [{ name: "", url: "", image: "" }];
-}
-
-// تحويل صفوف { name, url, image } لمصفوفة أسطر نصية بصيغة "اسم | رابط | صورة" عشان تتبعت للسيرفر
-function rowsToPlaylist(rows){
-return (rows || [])
-.filter(r => (r.url || "").trim())
-.map(r => {
-const name = (r.name || "").trim();
-const url = (r.url || "").trim();
-const image = (r.image || "").trim();
-if (image) return (name || "") + "|" + url + "|" + image;
-return name ? (name + "|" + url) : url;
-});
-}
-
-function escAttr(s){
-return String(s || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
-}
-
-// بناء HTML لصفوف قائمة التشغيل — mode: "add" أو "edit"، channelId مطلوب بس في وضع edit
-function plRowsHtml(rows, mode, channelId){
-const updFn = mode === "add" ? "updateAddRow" : "updateEditRow";
-const mvFn  = mode === "add" ? "moveAddRow"   : "moveEditRow";
-const rmFn  = mode === "add" ? "removeAddRow" : "removeEditRow";
-const idArg = mode === "add" ? "" : ("'" + channelId + "',");
-
-return rows.map((row,i) => `
-<div class="plRow">
-<div class="plRowNum">${i+1}</div>
-<div class="plRowFields">
-<input placeholder="اسم الفيلم أو المقطع" value="${escAttr(row.name)}" oninput="${updFn}(${idArg}${i},'name',this.value)">
-<input placeholder="رابط الفيديو أو MP3" value="${escAttr(row.url)}" oninput="${updFn}(${idArg}${i},'url',this.value)">
-<input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="${escAttr(row.image)}" oninput="${updFn}(${idArg}${i},'image',this.value)">
-</div>
-<div class="plRowActions">
-<button type="button" onclick="${mvFn}(${idArg}${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
-<button type="button" onclick="${mvFn}(${idArg}${i},1)" title="لأسفل"><i class="ti ti-chevron-down"></i></button>
-<button type="button" class="plRemove" onclick="${rmFn}(${idArg}${i})" title="حذف"><i class="ti ti-x"></i></button>
-</div>
-</div>`).join("");
-}
-
-// ---- صفوف نموذج "إضافة قناة" ----
-let addRows = [{ name:"", url:"", image:"" }];
-
-function renderAddRows(){
-const box = document.getElementById("f_playlist_rows");
-if(!box) return;
-box.innerHTML = plRowsHtml(addRows, "add");
-}
-
-function updateAddRow(i, field, val){ addRows[i][field] = val; }
-
-function addAddRow(){
-addRows.push({ name:"", url:"", image:"" });
-renderAddRows();
-}
-
-function removeAddRow(i){
-if(addRows.length <= 1){ addRows[i] = { name:"", url:"", image:"" }; }
-else { addRows.splice(i,1); }
-renderAddRows();
-}
-
-function moveAddRow(i, dir){
-const j = i + dir;
-if(j < 0 || j >= addRows.length) return;
-[addRows[i], addRows[j]] = [addRows[j], addRows[i]];
-renderAddRows();
-}
-
-// ---- صفوف تعديل قناة موجودة ----
-function renderEditPlRows(id){
-const box = document.getElementById("plRows_" + id);
-if(!box || !editDraft[id]) return;
-box.innerHTML = plRowsHtml(editDraft[id].playlistRows || [], "edit", id);
-}
-
-function updateEditRow(id, i, field, val){
-if(!editDraft[id] || !editDraft[id].playlistRows) return;
-editDraft[id].playlistRows[i][field] = val;
-}
-
-function addEditRow(id){
-if(!editDraft[id]) return;
-editDraft[id].playlistRows.push({ name:"", url:"", image:"" });
-renderEditPlRows(id);
-}
-
-function removeEditRow(id, i){
-if(!editDraft[id]) return;
-const rows = editDraft[id].playlistRows;
-if(rows.length <= 1){ rows[i] = { name:"", url:"", image:"" }; }
-else { rows.splice(i,1); }
-renderEditPlRows(id);
-}
-
-function moveEditRow(id, i, dir){
-if(!editDraft[id]) return;
-const rows = editDraft[id].playlistRows;
-const j = i + dir;
-if(j < 0 || j >= rows.length) return;
-[rows[i], rows[j]] = [rows[j], rows[i]];
-renderEditPlRows(id);
+// عرض الـ playlist المخزّن (مصفوفة { name, url, image } أو نصوص قديمة) كسطر "اسم | رابط | صورة" في التعديل
+function playlistToText(playlist){
+return (playlist || []).map(item => {
+if (typeof item === "string") return item;
+const name = item?.name || "";
+const url = item?.url || "";
+const image = item?.image || "";
+if (image) return (name || "") + " | " + url + " | " + image;
+return name ? (name + " | " + url) : url;
+}).join("\\n");
 }
 
 function setAccent(name){
@@ -2256,9 +2052,8 @@ box.innerHTML += \`
 </div>
 
 <div class="editField">
-<div class="tLbl">قائمة التشغيل (أفلام / مقاطع)</div>
-<div id="plRows_\${id}" class="plRows plRowsEdit">\${plRowsHtml(editDraft[id]?.playlistRows ?? [], "edit", id)}</div>
-<button type="button" class="plAddBtn" onclick="addEditRow('\${id}')" style="margin-top:6px"><i class="ti ti-plus"></i>إضافة فيلم / مقطع</button>
+<div class="tLbl">قائمة تشغيل (اسم الفيلم | الرابط — سطر لكل فيلم، اسيبها فاضية لو مش محتاجها)</div>
+<textarea rows="4" oninput="updateDraft('\${id}','playlist',this.value)">\${(editDraft[id]?.playlist ?? playlistToText(ch.playlist))}</textarea>
 </div>
 
 <div class="editField">
@@ -2583,7 +2378,8 @@ const scheduleDays = Array.from(document.querySelectorAll(".schedDay:checked")).
 const scheduleStart = document.getElementById("f_scheduleStart").value || "00:00";
 const scheduleStop = document.getElementById("f_scheduleStop").value || "23:59";
 const schedule = { enabled: scheduleEnabled, days: scheduleDays, start: scheduleStart, stop: scheduleStop };
-const playlist = rowsToPlaylist(addRows);
+const playlistRaw = document.getElementById("f_playlist").value.trim();
+const playlist = playlistRaw ? playlistRaw.split("\\n").map(l => l.trim()).filter(Boolean) : [];
 
 if(!id || !output || (!input && playlist.length === 0)){
 alert("من فضلك املأ معرف القناة، رابط الإخراج، وإما رابط بث واحد أو قائمة تشغيل");
@@ -2616,8 +2412,7 @@ document.getElementById("f_scheduleEnabled").checked = false;
 document.querySelectorAll(".schedDay").forEach(el => el.checked = false);
 document.getElementById("f_scheduleStart").value = "00:00";
 document.getElementById("f_scheduleStop").value = "23:59";
-addRows = [{ name:"", url:"", image:"" }];
-renderAddRows();
+document.getElementById("f_playlist").value = "";
 
 load();
 show("channels");
@@ -2636,7 +2431,7 @@ output: channelsCache[id].output || "",
 logo: channelsCache[id].logo || "",
 category: channelsCache[id].category || "",
 watchUrl: channelsCache[id].watchUrl || "",
-playlistRows: playlistToRows(channelsCache[id].playlist),
+playlist: playlistToText(channelsCache[id].playlist),
 titlePosition: channelsCache[id].titlePosition || "bottom",
 titleColor: channelsCache[id].titleColor || "white",
 audioImage: channelsCache[id].audioImage || "",
@@ -2651,7 +2446,9 @@ render();
 
 async function saveEdit(id){
 const draft = editDraft[id] || {};
-const playlist = rowsToPlaylist(draft.playlistRows || []);
+const playlist = (draft.playlist || "").trim()
+? draft.playlist.trim().split("\\n").map(l => l.trim()).filter(Boolean)
+: [];
 
 const schedule = {
 enabled: draft.scheduleEnabled ?? channelsCache[id].schedule?.enabled ?? false,
@@ -2697,7 +2494,6 @@ render();
 load();
 loadEvents();
 connectWS();
-renderAddRows();
 
 setInterval(()=>{
 if((!ws || ws.readyState !== 1) && !editingId) load();
