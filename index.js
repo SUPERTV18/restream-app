@@ -280,91 +280,91 @@ function logEvent(id, type, message) {
 // ======================
 const channels = {
   ch4k: {
-    input: "",
-    output: "",
+    input: "http://195.182.16.45:8080/live/omar777/01103978590/460864.ts",
+    output: "rtmp://live.twitch.tv/app/live_151597255_5HndsveAXExMraoT8RGtn23qCKcVx0",
     logo: "logo4kh.png",
     category: "",
     watchUrl: ""
   },
   ch1: {
-    input: "",
-    output: "",
+    input: "https://163.ostv.info/krikar/krikar/652333?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    output: "rtmp://vsu.okcdn.ru/input/15037126680149_16572030782037_nwbfmzaoxm",
     logo: "logo1.png",
     category: "رياضة",
-    watchUrl: ""
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_1.m3u8"
   },
   ch2: {
-    input: "",
-    output: "",
+    input: "https://163.ostv.info/krikar/krikar/652334?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    output: "rtmp://vsu.okcdn.ru/input/15037158268501_16572084062805_f6sgg23zdy",
     logo: "logo22.png",
     category: "رياضة",
-    watchUrl: ""
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_2.m3u8"
   },
   ch3: {
-    input: "",
-    output: "",
+    input: "https://163.ostv.info/krikar/krikar/652335?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    output: "rtmp://vsu.okcdn.ru/input/15651304709717_17641796995669_ozpan4c55m",
     logo: "logo33.png",
     category: "رياضة",
-    watchUrl: ""
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_3.m3u8"
   },
   ch4: {
-    input: "",
-    output: "",
+    input: "https://163.ostv.info/krikar/krikar/652336?token=ShJcU0BbQQNHDgxcBwYDCVsBAwdTV1FYCVdTAQABBAtUCAAHCwZTCAAbGBpEF0dcWF1vWQIXXlIJWlcFVEgRR0JVRm1aV0EDRwgBCgRWDAkbHBJED1gBQwtTVQFQXQQKBwUHHhFDCl1HA1pNWw8ZG1xIRFUUWwUNbgYHQQwHVhALXkFeXx9BVgtmUF1aAltdGwoSAUQZRghCEkANCxFfXh0SVltHQQJNABsOVkIPWRUbU19FCEEWGBNYQH40Rh8QVEhAV11AClYLGw4aQxAXFRtZQ28UUBcVQwcDWgAWEQgTABYeEV4CQTpaW1ZZBlZNUF9eQ0QPRlATTkBaCgpaRl5Ca0JaV0EDC0xYVEo=",
+    output: "rtmp://vsu.okcdn.ru/input/15651325025877_17641833499221_yp3cn26lt4",
     logo: "logo44.png",
     category: "رياضة",
-    watchUrl: ""
+    watchUrl: "https://super-tvlive.vercel.app/SUPERTV_4.m3u8"
   },
   ch5: {
-    input: "",
-    output: "",
+    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/14863707479574_16379956300310_uoslkp4xrm",
     logo: "logo55.png",
     category: "",
     watchUrl: ""
   },
   ch6: {
-    input: "",
-    output: "",
+    input: "https://ranapkbd.site/RANAPK33g/TVD/play.php?id=1745020",
+    output: "rtmp://vsu.okcdn.ru/input/14901168119318_16447213341206_ssfncxg2zu",
     logo: "logo66.png",
     category: "",
     watchUrl: ""
   },
   ch7: {
-    input: "https://blc2cr.linkip.org/live/90099_.m3u8?play=",
-    output: "",
+    input: "https://server8.mp3quran.net/afs/002.mp3",
+    output: "rtmp://vsu.okcdn.ru/input/15651334528597_17641850407509_yznfutuhc4",
     logo: "quran3.png",
     category: "دينية",
     watchUrl: ""
   },
   ch8: {
-    input: "",
-    output: "",
+    input: "https://blc2cr.linkip.org/live/90055_.m3u8?play=",
+    output: "rtmp://vsu.okcdn.ru/input/15651343638101_17641866463829_ttxdybjs44",
     logo: "aflam3.png",
     category: "أفلام",
     watchUrl: ""
   },
   ch9: {
-    input: "",
-    output: "",
+    input: "https://blc2cr.linkip.org/live/90131_.m3u8?play",
+    output: "rtmp://vsu.okcdn.ru/input/15651360939605_17641898117717_viq7erszve",
     logo: "mosalsalat2.png",
     category: "مسلسلات",
     watchUrl: ""
   },
   ch10: {
-    input: "",
-    output: "",
+    input: "http://185.160.192.14/live/171348492752/5S6HGsea3j/255225.m3u8",
+    output: "rtmp://vsu.okcdn.ru/input/14994479390230_16613027809814_7sovqbfsba",
     logo: "animy.png",
     category: "أنمي",
     watchUrl: ""
   },
   ch11: {
-    input: "",
-    output: "",
+    input: "https://blc2cr.linkip.org/live/90068_.m3u8?play",
+    output: "rtmp://vsu.okcdn.ru/input/15651369393749_17641912928853_nzama5i56a",
     logo: "kids3.png",
     category: "أطفال",
     watchUrl: ""
       },
    chyt1: {
-    input: "",
+    input: "https://www.youtube.com/live/7DHNbnPMNiM?si=Ypmmu60JMR9OtlNa",
     output: "",
     logo: "",
     category: "",
@@ -1987,20 +1987,20 @@ const mvFn  = mode === "add" ? "moveAddRow"   : "moveEditRow";
 const rmFn  = mode === "add" ? "removeAddRow" : "removeEditRow";
 const idArg = mode === "add" ? "" : ("'" + channelId + "',");
 
-return rows.map((row,i) => \`
+return rows.map((row,i) => `
 <div class="plRow">
-<div class="plRowNum">\${i+1}</div>
+<div class="plRowNum">${i+1}</div>
 <div class="plRowFields">
-<input placeholder="اسم الفيلم أو المقطع" value="\${escAttr(row.name)}" oninput="\${updFn}(\${idArg}\${i},'name',this.value)">
-<input placeholder="رابط الفيديو أو MP3" value="\${escAttr(row.url)}" oninput="\${updFn}(\${idArg}\${i},'url',this.value)">
-<input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="\${escAttr(row.image)}" oninput="\${updFn}(\${idArg}\${i},'image',this.value)">
+<input placeholder="اسم الفيلم أو المقطع" value="${escAttr(row.name)}" oninput="${updFn}(${idArg}${i},'name',this.value)">
+<input placeholder="رابط الفيديو أو MP3" value="${escAttr(row.url)}" oninput="${updFn}(${idArg}${i},'url',this.value)">
+<input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="${escAttr(row.image)}" oninput="${updFn}(${idArg}${i},'image',this.value)">
 </div>
 <div class="plRowActions">
-<button type="button" onclick="\${mvFn}(\${idArg}\${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
-<button type="button" onclick="\${mvFn}(\${idArg}\${i},1)" title="لأسفل"><i class="ti ti-chevron-down"></i></button>
-<button type="button" class="plRemove" onclick="\${rmFn}(\${idArg}\${i})" title="حذف"><i class="ti ti-x"></i></button>
+<button type="button" onclick="${mvFn}(${idArg}${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
+<button type="button" onclick="${mvFn}(${idArg}${i},1)" title="لأسفل"><i class="ti ti-chevron-down"></i></button>
+<button type="button" class="plRemove" onclick="${rmFn}(${idArg}${i})" title="حذف"><i class="ti ti-x"></i></button>
 </div>
-</div>\`).join("");
+</div>`).join("");
 }
 
 // ---- صفوف نموذج "إضافة قناة" ----
@@ -2289,7 +2289,7 @@ box.innerHTML += \`
 \${[["0","الأحد"],["1","الاثنين"],["2","الثلاثاء"],["3","الأربعاء"],["4","الخميس"],["5","الجمعة"],["6","السبت"]].map(([val,label]) => {
 const currentDays = editDraft[id]?.scheduleDays ?? (ch.schedule?.days || []);
 const checked = currentDays.map(String).includes(val) ? 'checked' : '';
-return '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text-2);margin:0"><input type="checkbox" class="eSchedDay-'+id+'" value="'+val+'" style="width:auto" '+checked+' onchange="updateEditScheduleDays(\''+id+'\')">'+label+'</label>';
+return '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text-2);margin:0"><input type="checkbox" class="eSchedDay-'+id+'" value="'+val+'" style="width:auto" '+checked+' onchange="updateEditScheduleDays(\\''+id+'\\')">'+label+'</label>';
 }).join('')}
 </div>
 <div style="display:flex;gap:6px">
