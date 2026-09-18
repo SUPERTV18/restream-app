@@ -546,7 +546,7 @@ async function spawnStream(id) {
   const q = getQualityPreset(ch);
 
   // مكان اسم الفيلم على الشاشة: فوق أو تحت (افتراضي: تحت)، دايمًا في الجانب الشمال (x=20)
-  const titleY = ch.titlePosition === "top" ? "20" : "h-th-20";
+  const titleY = ch.titlePosition === "top" ? "60" : "h-th-20";
 
   // لون اسم الفيلم (افتراضي: أبيض) — من غير أي خلفية خلف النص
   const titleColor = /^[a-zA-Z]+$|^#?[0-9a-fA-F]{6}$/.test(ch.titleColor || "")
