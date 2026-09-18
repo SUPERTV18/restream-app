@@ -94,14 +94,47 @@ let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من
 
 // ======================
 // 🎬 قائمة التشغيل (لأفلام/مسلسلات: تنتقل للرابط التالي تلقائيًا)
+// كل عنصر في القائمة ممكن يكون:
+//   - string (الشكل القديم): رابط فقط بدون اسم
+//   - object (الشكل الجديد): { name: "اسم الفيلم", url: "رابط" }
 // ======================
 let playlistIndex = {}; // id -> index الحالي في قائمة التشغيل
+
+// تحويل سطر نصي "اسم الفيلم | الرابط" إلى { name, url }
+// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون اسم (توافق مع الشكل القديم)
+function parsePlaylistLine(line) {
+  const parts = line.split("|");
+  if (parts.length >= 2) {
+    return {
+      name: parts[0].trim(),
+      url: parts.slice(1).join("|").trim()
+    };
+  }
+  return { name: "", url: line.trim() };
+}
+
+// تجهيز نص العنوان عشان يتحط جوه فلتر drawtext بتاع ffmpeg من غير ما يبوّظ الفلتر
+function escapeDrawtext(text) {
+  return String(text || "")
+    .replace(/\\/g, "\\\\\\\\")
+    .replace(/:/g, "\\:")
+    .replace(/'/g, "\u2019")
+    .replace(/%/g, "\\%");
+}
 
 function getChannelSources(ch) {
   if (ch.playlist && Array.isArray(ch.playlist) && ch.playlist.length > 0) {
     return ch.playlist;
   }
-  return [ch.input];
+  return [{ name: "", url: ch.input }];
+}
+
+// استخراج { name, url } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
+function normalizeSource(rawSource) {
+  if (typeof rawSource === "string") {
+    return { name: "", url: rawSource };
+  }
+  return { name: rawSource?.name || "", url: rawSource?.url || "" };
 }
 
 // ======================
@@ -150,7 +183,8 @@ function logEvent(id, type, message) {
 // ======================
 // 🎯 CHANNELS
 // كل قناة ممكن يكون ليها: input, output, logo (رابط صورة), category (تصنيف)
-// أو بدل input: playlist (مصفوفة روابط) للأفلام/المسلسلات اللي بتتنقل تلقائي
+// أو بدل input: playlist (مصفوفة { name, url }) للأفلام/المسلسلات اللي بتتنقل تلقائي
+// titlePosition: "top" أو "bottom" — مكان اسم الفيلم على الشاشة (افتراضي: bottom)
 // ======================
 const channels = {
   ch4k: {
@@ -377,11 +411,12 @@ async function spawnStream(id) {
   const sources = getChannelSources(ch);
   if (playlistIndex[id] == null) playlistIndex[id] = 0;
   const rawSource = sources[playlistIndex[id] % sources.length];
+  const { name: currentTitle, url: rawUrl } = normalizeSource(rawSource);
 
   // نستخرج الرابط الفعلي (لو رابط يوتيوب، بنحوله لرابط HLS حقيقي)
   let resolvedInput;
   try {
-    resolvedInput = await resolveInputUrl(id, rawSource);
+    resolvedInput = await resolveInputUrl(id, rawUrl);
   } catch (err) {
     console.log(`[${id}] 🔥 فشل استخراج رابط البث:`, err.message);
     logEvent(id, "exit", "تعذر تشغيل القناة: " + err.message);
@@ -399,12 +434,12 @@ async function spawnStream(id) {
   // لو القناة اتقفلت أو اتشغلت من مكان تاني أثناء ما كنا بنستخرج الرابط
   if (ffmpegProcesses[id]) return;
 
-  console.log("▶ START:", id, sources.length > 1 ? `(${playlistIndex[id] + 1}/${sources.length})` : "");
+  console.log("▶ START:", id, sources.length > 1 ? `(${playlistIndex[id] + 1}/${sources.length})${currentTitle ? " - " + currentTitle : ""}` : "");
   logEvent(
     id,
     "start",
     sources.length > 1
-      ? `تم تشغيل القناة — الرابط ${playlistIndex[id] + 1} من ${sources.length}`
+      ? `تم تشغيل القناة — الرابط ${playlistIndex[id] + 1} من ${sources.length}${currentTitle ? " (" + currentTitle + ")" : ""}`
       : "تم تشغيل القناة"
   );
 
@@ -418,6 +453,24 @@ async function spawnStream(id) {
 
   const q = getQualityPreset(ch);
 
+  // مكان اسم الفيلم على الشاشة: فوق أو تحت (افتراضي: تحت)، دايمًا في الجانب الشمال (x=20)
+  const titleY = ch.titlePosition === "top" ? "20" : "h-th-20";
+
+  // لون اسم الفيلم (افتراضي: أبيض) — من غير أي خلفية خلف النص
+  const titleColor = /^[a-zA-Z]+$|^#?[0-9a-fA-F]{6}$/.test(ch.titleColor || "")
+    ? (ch.titleColor.startsWith("#") ? ch.titleColor.replace("#", "0x") : ch.titleColor)
+    : "white";
+
+  const titleFilter = currentTitle
+    ? `;[merged]drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='${escapeDrawtext(currentTitle)}':fontsize=26:fontcolor=${titleColor}:shadowcolor=black@0.8:shadowx=2:shadowy=2:x=20:y=${titleY}[base]`
+    : `;[merged]copy[base]`;
+
+  const filterComplex =
+    `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
+    `[1:v]scale=-1:3000[logo];` +
+    `[bg][logo]overlay=W-w-2:2[merged]` +
+    titleFilter;
+
   const ffmpeg = spawn("ffmpeg", [
     "-re",
 
@@ -429,7 +482,10 @@ async function spawnStream(id) {
     "-i", getLogo(id),
 
     "-filter_complex",
-    `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[base];[1:v]scale=-1:3000[logo];[base][logo]overlay=W-w-2:2`,
+    filterComplex,
+
+    "-map", "[base]",
+    "-map", "0:a?",
 
     "-c:v", "libx264",
 "-preset", q.preset,
@@ -494,11 +550,13 @@ async function spawnStream(id) {
       // قناة قائمة تشغيل: ننتقل للرابط التالي تلقائيًا (فيلم/حلقة خلصت أو الرابط باظ)
       playlistIndex[id] = (playlistIndex[id] + 1) % currentSources.length;
 
-      console.log(`❌ EXIT (playlist advance):`, id, `-> ${playlistIndex[id] + 1}/${currentSources.length}`);
+      const nextSource = normalizeSource(currentSources[playlistIndex[id]]);
+
+      console.log(`❌ EXIT (playlist advance):`, id, `-> ${playlistIndex[id] + 1}/${currentSources.length}${nextSource.name ? " - " + nextSource.name : ""}`);
       logEvent(
         id,
         "restart",
-        `انتقال للرابط التالي (${playlistIndex[id] + 1}/${currentSources.length})`
+        `انتقال للرابط التالي (${playlistIndex[id] + 1}/${currentSources.length})${nextSource.name ? " — " + nextSource.name : ""}`
       );
 
       setTimeout(() => {
@@ -643,6 +701,7 @@ app.get("/status", (req, res) => {
     const active = !!ffmpegProcesses[id];
     const currentSessionMs = active && liveSince[id] ? (Date.now() - liveSince[id]) : 0;
     const sources = getChannelSources(ch);
+    const currentSourceName = sources.length > 1 ? normalizeSource(sources[(playlistIndex[id] || 0) % sources.length]).name : "";
 
     result[id] = {
       active,
@@ -652,7 +711,8 @@ app.get("/status", (req, res) => {
       currentViewers: currentViewerLog[id] ? currentViewerLog[id].size : 0,
       totalViewers: totalViewerSet[id] ? totalViewerSet[id].size : 0,
       playlistPosition: sources.length > 1 ? ((playlistIndex[id] || 0) + 1) : null,
-      playlistTotal: sources.length > 1 ? sources.length : null
+      playlistTotal: sources.length > 1 ? sources.length : null,
+      currentTitle: currentSourceName
     };
   }
 
@@ -664,10 +724,10 @@ app.get("/channels", (req, res) => {
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category, watchUrl, quality, playlist } = req.body;
+  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor } = req.body;
 
   const cleanPlaylist = Array.isArray(playlist)
-    ? playlist.map(l => (l || "").trim()).filter(Boolean)
+    ? playlist.map(l => (l || "").trim()).filter(Boolean).map(parsePlaylistLine)
     : [];
 
   if (!id || !output || (!input && cleanPlaylist.length === 0))
@@ -680,7 +740,9 @@ app.post("/channel", (req, res) => {
     category: category || "",
     watchUrl: watchUrl || "",
     quality: QUALITY_PRESETS[quality] ? quality : "high",
-    playlist: cleanPlaylist
+    playlist: cleanPlaylist,
+    titlePosition: titlePosition === "top" ? "top" : "bottom",
+    titleColor: (titleColor || "").trim() || "white"
   };
 
   playlistIndex[id] = 0;
@@ -697,7 +759,7 @@ app.put("/channel/:id", (req, res) => {
     return res.status(404).json({ ok: false });
 
   const cleanPlaylist = Array.isArray(req.body.playlist)
-    ? req.body.playlist.map(l => (l || "").trim()).filter(Boolean)
+    ? req.body.playlist.map(l => (l || "").trim()).filter(Boolean).map(parsePlaylistLine)
     : channels[id].playlist || [];
 
   channels[id] = {
@@ -708,7 +770,9 @@ app.put("/channel/:id", (req, res) => {
     category: req.body.category ?? channels[id].category,
     watchUrl: req.body.watchUrl ?? channels[id].watchUrl,
     quality: QUALITY_PRESETS[req.body.quality] ? req.body.quality : (channels[id].quality || "high"),
-    playlist: cleanPlaylist
+    playlist: cleanPlaylist,
+    titlePosition: req.body.titlePosition === "top" ? "top" : (req.body.titlePosition === "bottom" ? "bottom" : (channels[id].titlePosition || "bottom")),
+    titleColor: req.body.titleColor !== undefined ? ((req.body.titleColor || "").trim() || "white") : (channels[id].titleColor || "white")
   };
 
   playlistIndex[id] = 0;
@@ -1146,7 +1210,7 @@ white-space:nowrap;
 
 .editField{ margin-bottom:9px; }
 .editField .tLbl{ font-size:10px; color:var(--text-3); margin-bottom:3px; }
-.editField input, .editField textarea{
+.editField input, .editField textarea, .editField select{
 width:100%;
 padding:7px 9px;
 border-radius:7px;
@@ -1163,7 +1227,7 @@ text-align:left;
 resize:vertical;
 min-height:70px;
 }
-.editField input:focus, .editField textarea:focus{ border-color:var(--accent); }
+.editField input:focus, .editField textarea:focus, .editField select:focus{ border-color:var(--accent); }
 
 .editActions{ display:flex; gap:6px; margin-top:12px; }
 .editActions button{
@@ -1492,11 +1556,23 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_input" placeholder="rtmp:// or http://...">
 <div class="hint">تقدر تحط رابط بث مباشر على يوتيوب مباشرة (youtube.com/watch?v=... أو youtube.com/live/...) والسيرفر يستخرج رابط البث الحقيقي منه تلقائي. اتركه فاضي لو هتستخدم "قائمة تشغيل" تحت.</div>
 
-<label>قائمة تشغيل (أفلام/مسلسلات — رابط في كل سطر)</label>
-<textarea id="f_playlist" placeholder="https://.../movie1.mp4
-https://.../movie2.mp4
-https://.../movie3.mp4"></textarea>
-<div class="hint">اختياري — لو ضفت أكتر من رابط هنا، القناة تشغّلهم بالترتيب وتنتقل تلقائي للي بعده أول ما اللي قبله يخلص، وترجع تدور من الأول تاني. لو ملّيت الحقل ده، رابط البث فوق مش هيتستخدم.</div>
+<label>قائمة تشغيل (أفلام/مسلسلات — اسم الفيلم | الرابط، في كل سطر)</label>
+<textarea id="f_playlist" placeholder="فيلم الأول | https://.../movie1.mp4
+فيلم الثاني | https://.../movie2.mp4"></textarea>
+<div class="hint">اختياري — لو ضفت أكتر من سطر هنا، القناة تشغّل الروابط بالترتيب وتنتقل تلقائي للي بعده أول ما اللي قبله يخلص، وترجع تدور من الأول تاني. الاسم قبل "|" هيظهر مكتوب فوق الفيديو وقت عرض هذا الفيلم، وهيتغير تلقائي مع كل فيلم جديد. لو مش عايز تكتب اسم، سيب الجزء ده فاضي وحط الرابط لوحده. لو ملّيت الحقل ده، رابط البث فوق مش هيتستخدم.</div>
+
+<label>مكان اسم الفيلم على الشاشة</label>
+<select id="f_titlePosition">
+<option value="bottom">أسفل الشاشة (يسار)</option>
+<option value="top">أعلى الشاشة (يسار)</option>
+</select>
+
+<label>لون اسم الفيلم (بدون خلفية خلف النص)</label>
+<div style="display:flex;gap:8px;align-items:center">
+<input type="color" id="f_titleColorPicker" value="#ffffff" style="width:44px;height:38px;padding:2px;cursor:pointer" oninput="document.getElementById('f_titleColor').value=this.value">
+<input id="f_titleColor" placeholder="white أو #FFFFFF" value="white" style="flex:1">
+</div>
+<div class="hint">اكتب اسم لون إنجليزي (white, yellow, red...) أو اختار من مربع اللون، أو اكتب كود Hex بنفسك</div>
 
 <label>رابط الإخراج (RTMP Output)</label>
 <input id="f_output" placeholder="rtmp://...">
@@ -1605,6 +1681,16 @@ const s = Math.floor(totalSeconds % 60);
 const pad = n => String(n).padStart(2,"0");
 if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
 return m + ":" + pad(s);
+}
+
+// عرض الـ playlist المخزّن (مصفوفة { name, url } أو نصوص قديمة) كسطر "اسم | رابط" في التعديل
+function playlistToText(playlist){
+return (playlist || []).map(item => {
+if (typeof item === "string") return item;
+const name = item?.name || "";
+const url = item?.url || "";
+return name ? (name + " | " + url) : url;
+}).join("\\n");
 }
 
 function setAccent(name){
@@ -1765,11 +1851,14 @@ const currentViewers = statusCache[id]?.currentViewers || 0;
 const totalViewers = statusCache[id]?.totalViewers || 0;
 const playlistPosition = statusCache[id]?.playlistPosition;
 const playlistTotal = statusCache[id]?.playlistTotal;
+const currentTitle = statusCache[id]?.currentTitle || "";
 const ch = channelsCache[id];
 const logoUrl = ch.logo || "";
 const category = ch.category || "";
 const qualityLabel = { high: "1080p", medium: "720p", low: "480p" }[ch.quality] || "1080p";
 const hasPlaylist = ch.playlist && ch.playlist.length > 0;
+const currentItem = hasPlaylist ? (ch.playlist[(playlistPosition||1)-1] || ch.playlist[0]) : null;
+const currentItemUrl = currentItem ? (typeof currentItem === "string" ? currentItem : currentItem.url) : "";
 
 box.innerHTML += \`
 <div class="card">
@@ -1793,8 +1882,21 @@ box.innerHTML += \`
 </div>
 
 <div class="editField">
-<div class="tLbl">قائمة تشغيل (رابط في كل سطر — اسيبها فاضية لو مش محتاجها)</div>
-<textarea rows="4" oninput="updateDraft('\${id}','playlist',this.value)">\${(editDraft[id]?.playlist ?? (ch.playlist||[]).join('\\n'))}</textarea>
+<div class="tLbl">قائمة تشغيل (اسم الفيلم | الرابط — سطر لكل فيلم، اسيبها فاضية لو مش محتاجها)</div>
+<textarea rows="4" oninput="updateDraft('\${id}','playlist',this.value)">\${(editDraft[id]?.playlist ?? playlistToText(ch.playlist))}</textarea>
+</div>
+
+<div class="editField">
+<div class="tLbl">مكان اسم الفيلم على الشاشة</div>
+<select onchange="updateDraft('\${id}','titlePosition',this.value)">
+<option value="bottom" \${(editDraft[id]?.titlePosition ?? ch.titlePosition ?? 'bottom') === 'bottom' ? 'selected' : ''}>أسفل الشاشة (يسار)</option>
+<option value="top" \${(editDraft[id]?.titlePosition ?? ch.titlePosition) === 'top' ? 'selected' : ''}>أعلى الشاشة (يسار)</option>
+</select>
+</div>
+
+<div class="editField">
+<div class="tLbl">لون اسم الفيلم (white أو #FFFFFF)</div>
+<input value="\${(editDraft[id]?.titleColor ?? ch.titleColor ?? 'white').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','titleColor',this.value)">
 </div>
 
 <div class="editField">
@@ -1858,7 +1960,7 @@ box.innerHTML += \`
 \${ hasPlaylist ? \`
 <div class="techLine">
 <div class="tLbl">قائمة التشغيل</div>
-<span class="tVal">🎬 الرابط \${playlistPosition||1} من \${playlistTotal||ch.playlist.length} — بينتقل تلقائي لما يخلص</span>
+<span class="tVal">🎬 \${currentTitle ? currentTitle + ' — ' : ''}الرابط \${playlistPosition||1} من \${playlistTotal||ch.playlist.length} — بينتقل تلقائي لما يخلص</span>
 </div>
 \` : '' }
 
@@ -1874,7 +1976,7 @@ box.innerHTML += \`
 
 <div class="techLine">
 <div class="tLbl">\${hasPlaylist ? 'INPUT الحالي' : 'INPUT'}</div>
-<span class="tVal" title="\${ch.input || ''}">\${hasPlaylist ? (ch.playlist[(playlistPosition||1)-1] || ch.playlist[0]) : (ch.input || '—')}</span>
+<span class="tVal" title="\${ch.input || ''}">\${hasPlaylist ? currentItemUrl : (ch.input || '—')}</span>
 </div>
 
 <div class="techLine">
@@ -2067,6 +2169,8 @@ const logo = document.getElementById("f_logo").value.trim();
 const category = document.getElementById("f_category").value.trim();
 const watchUrl = document.getElementById("f_watchUrl").value.trim();
 const quality = document.getElementById("f_quality").value;
+const titlePosition = document.getElementById("f_titlePosition").value;
+const titleColor = document.getElementById("f_titleColor").value.trim() || "white";
 const playlistRaw = document.getElementById("f_playlist").value.trim();
 const playlist = playlistRaw ? playlistRaw.split("\\n").map(l => l.trim()).filter(Boolean) : [];
 
@@ -2078,7 +2182,7 @@ return;
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist })
+body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor })
 });
 
 document.getElementById("f_id").value = "";
@@ -2088,6 +2192,9 @@ document.getElementById("f_logo").value = "";
 document.getElementById("f_category").value = "";
 document.getElementById("f_watchUrl").value = "";
 document.getElementById("f_quality").value = "high";
+document.getElementById("f_titlePosition").value = "bottom";
+document.getElementById("f_titleColor").value = "white";
+document.getElementById("f_titleColorPicker").value = "#ffffff";
 document.getElementById("f_playlist").value = "";
 
 load();
@@ -2107,7 +2214,9 @@ output: channelsCache[id].output || "",
 logo: channelsCache[id].logo || "",
 category: channelsCache[id].category || "",
 watchUrl: channelsCache[id].watchUrl || "",
-playlist: (channelsCache[id].playlist || []).join("\\n")
+playlist: playlistToText(channelsCache[id].playlist),
+titlePosition: channelsCache[id].titlePosition || "bottom",
+titleColor: channelsCache[id].titleColor || "white"
 };
 editingId = id;
 render();
@@ -2129,6 +2238,8 @@ logo: draft.logo ?? "",
 category: draft.category ?? "",
 watchUrl: draft.watchUrl ?? "",
 quality: draft.quality ?? channelsCache[id].quality ?? "high",
+titlePosition: draft.titlePosition ?? channelsCache[id].titlePosition ?? "bottom",
+titleColor: draft.titleColor ?? channelsCache[id].titleColor ?? "white",
 playlist
 })
 });
@@ -2197,6 +2308,7 @@ function broadcast() {
     const active = !!ffmpegProcesses[id];
     const currentSessionMs = active && liveSince[id] ? (Date.now() - liveSince[id]) : 0;
     const sources = getChannelSources(ch);
+    const currentSourceName = sources.length > 1 ? normalizeSource(sources[(playlistIndex[id] || 0) % sources.length]).name : "";
 
     data[id] = {
       active,
@@ -2206,7 +2318,8 @@ function broadcast() {
       currentViewers: currentViewerLog[id] ? currentViewerLog[id].size : 0,
       totalViewers: totalViewerSet[id] ? totalViewerSet[id].size : 0,
       playlistPosition: sources.length > 1 ? ((playlistIndex[id] || 0) + 1) : null,
-      playlistTotal: sources.length > 1 ? sources.length : null
+      playlistTotal: sources.length > 1 ? sources.length : null,
+      currentTitle: currentSourceName
     };
   }
 
