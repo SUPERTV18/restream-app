@@ -571,9 +571,12 @@ async function spawnStream(id) {
 
   if (audioMode) {
     // مصدر الفيديو: صورة ثابتة (لو موجودة) أو خلفية سودا لو مفيش صورة خالص
+    // ملحوظة مهمة: لازم "-loop 1" على اللوجو كمان هنا — لأننا مستخدمين "-shortest"،
+    // فأي صورة بتتحمّل بفريم واحد بس (من غير loop) هتخلص فورًا وتوقف البث كله على طول
+    // حتى لو الصوت لسه له ساعات، فلازم كل المداخل المصوّرة (الصورة الأساسية + اللوجو) تتكرر بلا نهاية
     ffmpegInputArgs = stillImage
-      ? ["-loop", "1", "-i", stillImage, "-i", resolvedInput, "-i", getLogo(id)]
-      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, "-i", resolvedInput, "-i", getLogo(id)];
+      ? ["-loop", "1", "-i", stillImage, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)]
+      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)];
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
