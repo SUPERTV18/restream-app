@@ -100,20 +100,23 @@ let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من
 // ======================
 let playlistIndex = {}; // id -> index الحالي في قائمة التشغيل
 
-// تحويل سطر نصي "اسم | الرابط | رابط الصورة (اختياري) | User-Agent (اختياري)" إلى { name, url, image, userAgent }
-// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون اسم ولا صورة ولا يوزر أجينت (توافق مع الشكل القديم)
+// تحويل سطر نصي "اسم | الرابط | رابط الصورة (اختياري) | User-Agent (اختياري) | Referer (اختياري)" إلى { name, url, image, userAgent, referer }
+// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون أي حقل تاني (توافق مع الشكل القديم)
 function parsePlaylistLine(line) {
   const parts = line.split("|").map(p => p.trim());
-  if (parts.length >= 4) {
-    return { name: parts[0], url: parts[1], image: parts[2], userAgent: parts.slice(3).join("|").trim() };
+  if (parts.length >= 5) {
+    return { name: parts[0], url: parts[1], image: parts[2], userAgent: parts[3], referer: parts.slice(4).join("|").trim() };
+  }
+  if (parts.length === 4) {
+    return { name: parts[0], url: parts[1], image: parts[2], userAgent: parts[3], referer: "" };
   }
   if (parts.length === 3) {
-    return { name: parts[0], url: parts[1], image: parts[2], userAgent: "" };
+    return { name: parts[0], url: parts[1], image: parts[2], userAgent: "", referer: "" };
   }
   if (parts.length === 2) {
-    return { name: parts[0], url: parts[1], image: "", userAgent: "" };
+    return { name: parts[0], url: parts[1], image: "", userAgent: "", referer: "" };
   }
-  return { name: "", url: parts[0], image: "", userAgent: "" };
+  return { name: "", url: parts[0], image: "", userAgent: "", referer: "" };
 }
 
 // امتدادات الصوت المعروفة — لو الرابط بينتهي بيها، هيتعامل معاه كمصدر صوتي (يحتاج صورة بدل الفيديو)
@@ -221,19 +224,20 @@ function getChannelSources(ch) {
   if (ch.playlist && Array.isArray(ch.playlist) && ch.playlist.length > 0) {
     return ch.playlist;
   }
-  return [{ name: "", url: ch.input, userAgent: ch.userAgent || "" }];
+  return [{ name: "", url: ch.input, userAgent: ch.userAgent || "", referer: ch.referer || "" }];
 }
 
-// استخراج { name, url, image, userAgent } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
+// استخراج { name, url, image, userAgent, referer } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
 function normalizeSource(rawSource) {
   if (typeof rawSource === "string") {
-    return { name: "", url: rawSource, image: "", userAgent: "" };
+    return { name: "", url: rawSource, image: "", userAgent: "", referer: "" };
   }
   return {
     name: rawSource?.name || "",
     url: rawSource?.url || "",
     image: rawSource?.image || "",
-    userAgent: rawSource?.userAgent || ""
+    userAgent: rawSource?.userAgent || "",
+    referer: rawSource?.referer || ""
   };
 }
 
@@ -511,7 +515,7 @@ async function spawnStream(id) {
   const sources = getChannelSources(ch);
   if (playlistIndex[id] == null) playlistIndex[id] = 0;
   const rawSource = sources[playlistIndex[id] % sources.length];
-  const { name: currentTitle, url: rawUrl, userAgent: currentUserAgent } = normalizeSource(rawSource);
+  const { name: currentTitle, url: rawUrl, userAgent: currentUserAgent, referer: currentReferer } = normalizeSource(rawSource);
 
   // نستخرج الرابط الفعلي (لو رابط يوتيوب، بنحوله لرابط HLS حقيقي)
   let resolvedInput;
@@ -572,10 +576,14 @@ async function spawnStream(id) {
   const audioMode = isAudioUrl(rawUrl);
   const stillImage = (currentImage || ch.audioImage || getLogo(id) || "").trim();
 
-  // User-Agent مخصص لو الرابط محتاجه (بعض السيرفرات بترفض أي طلب من غير User-Agent متعارف عليه)
+  // User-Agent و Referer مخصصين لو الرابط محتاجهم (بعض السيرفرات بترفض أي طلب من غيرهم — زي 403 Forbidden)
   const userAgentArgs = (currentUserAgent || "").trim()
     ? ["-user_agent", currentUserAgent.trim()]
     : [];
+  const refererArgs = (currentReferer || "").trim()
+    ? ["-headers", `Referer: ${currentReferer.trim()}\r\n`]
+    : [];
+  const requestHeaderArgs = [...userAgentArgs, ...refererArgs];
 
   let filterComplex;
   let ffmpegInputArgs;
@@ -588,8 +596,8 @@ async function spawnStream(id) {
     // فأي صورة بتتحمّل بفريم واحد بس (من غير loop) هتخلص فورًا وتوقف البث كله على طول
     // حتى لو الصوت لسه له ساعات، فلازم كل المداخل المصوّرة (الصورة الأساسية + اللوجو) تتكرر بلا نهاية
     ffmpegInputArgs = stillImage
-      ? ["-loop", "1", "-i", stillImage, ...userAgentArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)]
-      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, ...userAgentArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)];
+      ? ["-loop", "1", "-i", stillImage, ...requestHeaderArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)]
+      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, ...requestHeaderArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)];
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
@@ -601,7 +609,7 @@ async function spawnStream(id) {
     // الصورة بتتكرر بلا نهاية، فلازم نوقف البث لما الصوت يخلص عشان تنتقل القائمة للمقطع اللي بعده
     extraEncodeArgs = ["-shortest"];
   } else {
-    ffmpegInputArgs = [...userAgentArgs, "-i", resolvedInput, "-i", getLogo(id)];
+    ffmpegInputArgs = [...requestHeaderArgs, "-i", resolvedInput, "-i", getLogo(id)];
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
@@ -612,7 +620,7 @@ async function spawnStream(id) {
     ffmpegMapArgs = ["-map", "[base]", "-map", "0:a?"];
   }
 
-  const ffmpeg = spawn("ffmpeg", [
+  const ffmpegArgs = [
     "-re",
 
     "-reconnect", "1",
@@ -649,7 +657,13 @@ async function spawnStream(id) {
 
     "-f", "flv",
     ch.output
-  ]);
+  ];
+
+  // نسجّل أمر ffmpeg الكامل في لوج القناة (مع إخفاء رابط الإخراج RTMP لأنه غالبًا فيه مفتاح سري)
+  const loggedArgs = ffmpegArgs.map(a => (typeof a === "string" && a === ch.output) ? "[RTMP_OUTPUT_HIDDEN]" : a);
+  pushLog(id, "🔧 ffmpeg " + loggedArgs.map(a => (typeof a === "string" && /[\s|]/.test(a)) ? `"${a}"` : a).join(" "));
+
+  const ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
   ffmpegProcesses[id] = ffmpeg;
 
@@ -865,7 +879,7 @@ app.get("/channels", (req, res) => {
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, userAgent } = req.body;
+  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, userAgent, referer } = req.body;
 
   const cleanPlaylist = Array.isArray(playlist)
     ? playlist.map(l => (l || "").trim()).filter(Boolean).map(parsePlaylistLine)
@@ -886,6 +900,7 @@ app.post("/channel", (req, res) => {
     titleColor: (titleColor || "").trim() || "white",
     audioImage: (audioImage || "").trim(),
     userAgent: (userAgent || "").trim(),
+    referer: (referer || "").trim(),
     schedule: parseScheduleInput(req.body.schedule)
   };
 
@@ -919,6 +934,7 @@ app.put("/channel/:id", (req, res) => {
     titleColor: req.body.titleColor !== undefined ? ((req.body.titleColor || "").trim() || "white") : (channels[id].titleColor || "white"),
     audioImage: req.body.audioImage !== undefined ? (req.body.audioImage || "").trim() : (channels[id].audioImage || ""),
     userAgent: req.body.userAgent !== undefined ? (req.body.userAgent || "").trim() : (channels[id].userAgent || ""),
+    referer: req.body.referer !== undefined ? (req.body.referer || "").trim() : (channels[id].referer || ""),
     schedule: req.body.schedule !== undefined ? parseScheduleInput(req.body.schedule) : (channels[id].schedule || null)
   };
 
@@ -1811,6 +1827,10 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_userAgent" placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64)...">
 <div class="hint">اختياري — بعض مواقع البث بترفض أي طلب من غير User-Agent متعارف عليه. لو حصلت مشكلة في تشغيل رابط معين، جرب تحط هنا نفس الـ User-Agent اللي المتصفح بيبعته.</div>
 
+<label>Referer مخصص لرابط البث أعلاه (اختياري)</label>
+<input id="f_referer" placeholder="https://example.com/">
+<div class="hint">اختياري — لو ظهر خطأ "403 Forbidden" حتى مع الـ User-Agent، غالبًا الموقع محتاج يتأكد إن الطلب جاي من صفحته هو. حط هنا رابط الموقع نفسه (الصفحة الرئيسية أو صفحة الفيلم).</div>
+
 <label>قائمة تشغيل (أفلام / مسلسلات / مقاطع صوتية)</label>
 <div class="hint" style="margin-top:0;margin-bottom:8px">أضف كل فيلم أو مقطع في صف مستقل: اسمه، رابطه، وصورة اختيارية (للمقاطع الصوتية mp3 فقط). رتّبهم بالأسهم، والاسم هيظهر مكتوب فوق الفيديو وهيتغيّر تلقائي مع كل عنصر جديد.</div>
 <div id="f_playlist_rows" class="plRows"></div>
@@ -1973,16 +1993,16 @@ if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
 return m + ":" + pad(s);
 }
 
-// عرض الـ playlist المخزّن (مصفوفة { name, url, image, userAgent } أو نصوص قديمة) كصفوف جاهزة للتعديل
+// عرض الـ playlist المخزّن (مصفوفة { name, url, image, userAgent, referer } أو نصوص قديمة) كصفوف جاهزة للتعديل
 function playlistToRows(playlist){
 const rows = (playlist || []).map(item => {
-if (typeof item === "string") return { name: "", url: item, image: "", userAgent: "" };
-return { name: item?.name || "", url: item?.url || "", image: item?.image || "", userAgent: item?.userAgent || "" };
+if (typeof item === "string") return { name: "", url: item, image: "", userAgent: "", referer: "" };
+return { name: item?.name || "", url: item?.url || "", image: item?.image || "", userAgent: item?.userAgent || "", referer: item?.referer || "" };
 });
-return rows.length > 0 ? rows : [{ name: "", url: "", image: "", userAgent: "" }];
+return rows.length > 0 ? rows : [{ name: "", url: "", image: "", userAgent: "", referer: "" }];
 }
 
-// تحويل صفوف { name, url, image, userAgent } لمصفوفة أسطر نصية بصيغة "اسم | رابط | صورة | يوزر أجينت" عشان تتبعت للسيرفر
+// تحويل صفوف { name, url, image, userAgent, referer } لمصفوفة أسطر نصية بصيغة "اسم | رابط | صورة | يوزر أجينت | ريفرر" عشان تتبعت للسيرفر
 function rowsToPlaylist(rows){
 return (rows || [])
 .filter(r => (r.url || "").trim())
@@ -1991,6 +2011,8 @@ const name = (r.name || "").trim();
 const url = (r.url || "").trim();
 const image = (r.image || "").trim();
 const ua = (r.userAgent || "").trim();
+const ref = (r.referer || "").trim();
+if (ref) return (name || "") + "|" + url + "|" + image + "|" + ua + "|" + ref;
 if (ua) return (name || "") + "|" + url + "|" + image + "|" + ua;
 if (image) return (name || "") + "|" + url + "|" + image;
 return name ? (name + "|" + url) : url;
@@ -2016,6 +2038,7 @@ return rows.map((row,i) => \`
 <input placeholder="رابط الفيديو أو MP3" value="\${escAttr(row.url)}" oninput="\${updFn}(\${idArg}\${i},'url',this.value)">
 <input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="\${escAttr(row.image)}" oninput="\${updFn}(\${idArg}\${i},'image',this.value)">
 <input placeholder="User-Agent مخصص (اختياري)" value="\${escAttr(row.userAgent)}" oninput="\${updFn}(\${idArg}\${i},'userAgent',this.value)">
+<input placeholder="Referer مخصص (اختياري — لو ظهر 403 Forbidden)" value="\${escAttr(row.referer)}" oninput="\${updFn}(\${idArg}\${i},'referer',this.value)">
 </div>
 <div class="plRowActions">
 <button type="button" onclick="\${mvFn}(\${idArg}\${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
@@ -2026,7 +2049,7 @@ return rows.map((row,i) => \`
 }
 
 // ---- صفوف نموذج "إضافة قناة" ----
-let addRows = [{ name:"", url:"", image:"", userAgent:"" }];
+let addRows = [{ name:"", url:"", image:"", userAgent:"", referer:"" }];
 
 function renderAddRows(){
 const box = document.getElementById("f_playlist_rows");
@@ -2037,12 +2060,12 @@ box.innerHTML = plRowsHtml(addRows, "add");
 function updateAddRow(i, field, val){ addRows[i][field] = val; }
 
 function addAddRow(){
-addRows.push({ name:"", url:"", image:"", userAgent:"" });
+addRows.push({ name:"", url:"", image:"", userAgent:"", referer:"" });
 renderAddRows();
 }
 
 function removeAddRow(i){
-if(addRows.length <= 1){ addRows[i] = { name:"", url:"", image:"", userAgent:"" }; }
+if(addRows.length <= 1){ addRows[i] = { name:"", url:"", image:"", userAgent:"", referer:"" }; }
 else { addRows.splice(i,1); }
 renderAddRows();
 }
@@ -2068,14 +2091,14 @@ editDraft[id].playlistRows[i][field] = val;
 
 function addEditRow(id){
 if(!editDraft[id]) return;
-editDraft[id].playlistRows.push({ name:"", url:"", image:"", userAgent:"" });
+editDraft[id].playlistRows.push({ name:"", url:"", image:"", userAgent:"", referer:"" });
 renderEditPlRows(id);
 }
 
 function removeEditRow(id, i){
 if(!editDraft[id]) return;
 const rows = editDraft[id].playlistRows;
-if(rows.length <= 1){ rows[i] = { name:"", url:"", image:"", userAgent:"" }; }
+if(rows.length <= 1){ rows[i] = { name:"", url:"", image:"", userAgent:"", referer:"" }; }
 else { rows.splice(i,1); }
 renderEditPlRows(id);
 }
@@ -2304,6 +2327,11 @@ box.innerHTML += \`
 <div class="editField">
 <div class="tLbl">User-Agent مخصص لرابط INPUT (اختياري — لو مش مستخدم قائمة تشغيل)</div>
 <input value="\${(editDraft[id]?.userAgent ?? ch.userAgent ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','userAgent',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">Referer مخصص لرابط INPUT (اختياري — لو ظهر 403 Forbidden)</div>
+<input value="\${(editDraft[id]?.referer ?? ch.referer ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','referer',this.value)">
 </div>
 
 <div class="editField">
@@ -2606,6 +2634,7 @@ const titlePosition = document.getElementById("f_titlePosition").value;
 const titleColor = document.getElementById("f_titleColor").value.trim() || "white";
 const audioImage = document.getElementById("f_audioImage").value.trim();
 const userAgent = document.getElementById("f_userAgent").value.trim();
+const referer = document.getElementById("f_referer").value.trim();
 const scheduleEnabled = document.getElementById("f_scheduleEnabled").checked;
 const scheduleDays = Array.from(document.querySelectorAll(".schedDay:checked")).map(el => parseInt(el.value, 10));
 const scheduleStart = document.getElementById("f_scheduleStart").value || "00:00";
@@ -2626,7 +2655,7 @@ return;
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, userAgent, schedule })
+body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, userAgent, referer, schedule })
 });
 
 document.getElementById("f_id").value = "";
@@ -2641,11 +2670,12 @@ document.getElementById("f_titleColor").value = "white";
 document.getElementById("f_titleColorPicker").value = "#ffffff";
 document.getElementById("f_audioImage").value = "";
 document.getElementById("f_userAgent").value = "";
+document.getElementById("f_referer").value = "";
 document.getElementById("f_scheduleEnabled").checked = false;
 document.querySelectorAll(".schedDay").forEach(el => el.checked = false);
 document.getElementById("f_scheduleStart").value = "00:00";
 document.getElementById("f_scheduleStop").value = "23:59";
-addRows = [{ name:"", url:"", image:"", userAgent:"" }];
+addRows = [{ name:"", url:"", image:"", userAgent:"", referer:"" }];
 renderAddRows();
 
 load();
@@ -2670,6 +2700,7 @@ titlePosition: channelsCache[id].titlePosition || "bottom",
 titleColor: channelsCache[id].titleColor || "white",
 audioImage: channelsCache[id].audioImage || "",
 userAgent: channelsCache[id].userAgent || "",
+referer: channelsCache[id].referer || "",
 scheduleEnabled: channelsCache[id].schedule?.enabled || false,
 scheduleDays: (channelsCache[id].schedule?.days || []).map(String),
 scheduleStart: channelsCache[id].schedule?.start || "00:00",
@@ -2709,6 +2740,7 @@ titlePosition: draft.titlePosition ?? channelsCache[id].titlePosition ?? "bottom
 titleColor: draft.titleColor ?? channelsCache[id].titleColor ?? "white",
 audioImage: draft.audioImage ?? channelsCache[id].audioImage ?? "",
 userAgent: draft.userAgent ?? channelsCache[id].userAgent ?? "",
+referer: draft.referer ?? channelsCache[id].referer ?? "",
 schedule,
 playlist
 })
