@@ -100,17 +100,20 @@ let lastBitrateKbps = {}; // id -> آخر بت ريت حقيقي اتقرأ من
 // ======================
 let playlistIndex = {}; // id -> index الحالي في قائمة التشغيل
 
-// تحويل سطر نصي "اسم | الرابط | رابط الصورة (اختياري)" إلى { name, url, image }
-// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون اسم ولا صورة (توافق مع الشكل القديم)
+// تحويل سطر نصي "اسم | الرابط | رابط الصورة (اختياري) | User-Agent (اختياري)" إلى { name, url, image, userAgent }
+// لو مفيش "|" في السطر، بيعتبر السطر كله رابط بدون اسم ولا صورة ولا يوزر أجينت (توافق مع الشكل القديم)
 function parsePlaylistLine(line) {
   const parts = line.split("|").map(p => p.trim());
-  if (parts.length >= 3) {
-    return { name: parts[0], url: parts[1], image: parts.slice(2).join("|").trim() };
+  if (parts.length >= 4) {
+    return { name: parts[0], url: parts[1], image: parts[2], userAgent: parts.slice(3).join("|").trim() };
+  }
+  if (parts.length === 3) {
+    return { name: parts[0], url: parts[1], image: parts[2], userAgent: "" };
   }
   if (parts.length === 2) {
-    return { name: parts[0], url: parts[1], image: "" };
+    return { name: parts[0], url: parts[1], image: "", userAgent: "" };
   }
-  return { name: "", url: parts[0], image: "" };
+  return { name: "", url: parts[0], image: "", userAgent: "" };
 }
 
 // امتدادات الصوت المعروفة — لو الرابط بينتهي بيها، هيتعامل معاه كمصدر صوتي (يحتاج صورة بدل الفيديو)
@@ -218,15 +221,20 @@ function getChannelSources(ch) {
   if (ch.playlist && Array.isArray(ch.playlist) && ch.playlist.length > 0) {
     return ch.playlist;
   }
-  return [{ name: "", url: ch.input }];
+  return [{ name: "", url: ch.input, userAgent: ch.userAgent || "" }];
 }
 
-// استخراج { name, url, image } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
+// استخراج { name, url, image, userAgent } من عنصر مصدر، سواء كان شكله القديم (string) أو الجديد (object)
 function normalizeSource(rawSource) {
   if (typeof rawSource === "string") {
-    return { name: "", url: rawSource, image: "" };
+    return { name: "", url: rawSource, image: "", userAgent: "" };
   }
-  return { name: rawSource?.name || "", url: rawSource?.url || "", image: rawSource?.image || "" };
+  return {
+    name: rawSource?.name || "",
+    url: rawSource?.url || "",
+    image: rawSource?.image || "",
+    userAgent: rawSource?.userAgent || ""
+  };
 }
 
 // ======================
@@ -503,7 +511,7 @@ async function spawnStream(id) {
   const sources = getChannelSources(ch);
   if (playlistIndex[id] == null) playlistIndex[id] = 0;
   const rawSource = sources[playlistIndex[id] % sources.length];
-  const { name: currentTitle, url: rawUrl } = normalizeSource(rawSource);
+  const { name: currentTitle, url: rawUrl, userAgent: currentUserAgent } = normalizeSource(rawSource);
 
   // نستخرج الرابط الفعلي (لو رابط يوتيوب، بنحوله لرابط HLS حقيقي)
   let resolvedInput;
@@ -564,6 +572,11 @@ async function spawnStream(id) {
   const audioMode = isAudioUrl(rawUrl);
   const stillImage = (currentImage || ch.audioImage || getLogo(id) || "").trim();
 
+  // User-Agent مخصص لو الرابط محتاجه (بعض السيرفرات بترفض أي طلب من غير User-Agent متعارف عليه)
+  const userAgentArgs = (currentUserAgent || "").trim()
+    ? ["-user_agent", currentUserAgent.trim()]
+    : [];
+
   let filterComplex;
   let ffmpegInputArgs;
   let ffmpegMapArgs;
@@ -575,8 +588,8 @@ async function spawnStream(id) {
     // فأي صورة بتتحمّل بفريم واحد بس (من غير loop) هتخلص فورًا وتوقف البث كله على طول
     // حتى لو الصوت لسه له ساعات، فلازم كل المداخل المصوّرة (الصورة الأساسية + اللوجو) تتكرر بلا نهاية
     ffmpegInputArgs = stillImage
-      ? ["-loop", "1", "-i", stillImage, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)]
-      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)];
+      ? ["-loop", "1", "-i", stillImage, ...userAgentArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)]
+      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, ...userAgentArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)];
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
@@ -588,7 +601,7 @@ async function spawnStream(id) {
     // الصورة بتتكرر بلا نهاية، فلازم نوقف البث لما الصوت يخلص عشان تنتقل القائمة للمقطع اللي بعده
     extraEncodeArgs = ["-shortest"];
   } else {
-    ffmpegInputArgs = ["-i", resolvedInput, "-i", getLogo(id)];
+    ffmpegInputArgs = [...userAgentArgs, "-i", resolvedInput, "-i", getLogo(id)];
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
@@ -852,7 +865,7 @@ app.get("/channels", (req, res) => {
 });
 
 app.post("/channel", (req, res) => {
-  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage } = req.body;
+  const { id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, userAgent } = req.body;
 
   const cleanPlaylist = Array.isArray(playlist)
     ? playlist.map(l => (l || "").trim()).filter(Boolean).map(parsePlaylistLine)
@@ -872,6 +885,7 @@ app.post("/channel", (req, res) => {
     titlePosition: titlePosition === "top" ? "top" : "bottom",
     titleColor: (titleColor || "").trim() || "white",
     audioImage: (audioImage || "").trim(),
+    userAgent: (userAgent || "").trim(),
     schedule: parseScheduleInput(req.body.schedule)
   };
 
@@ -904,6 +918,7 @@ app.put("/channel/:id", (req, res) => {
     titlePosition: req.body.titlePosition === "top" ? "top" : (req.body.titlePosition === "bottom" ? "bottom" : (channels[id].titlePosition || "bottom")),
     titleColor: req.body.titleColor !== undefined ? ((req.body.titleColor || "").trim() || "white") : (channels[id].titleColor || "white"),
     audioImage: req.body.audioImage !== undefined ? (req.body.audioImage || "").trim() : (channels[id].audioImage || ""),
+    userAgent: req.body.userAgent !== undefined ? (req.body.userAgent || "").trim() : (channels[id].userAgent || ""),
     schedule: req.body.schedule !== undefined ? parseScheduleInput(req.body.schedule) : (channels[id].schedule || null)
   };
 
@@ -1792,6 +1807,10 @@ box-shadow:-10px 0 30px rgba(16,24,40,0.25);
 <input id="f_input" placeholder="rtmp:// or http://...">
 <div class="hint">تقدر تحط رابط بث مباشر على يوتيوب مباشرة (youtube.com/watch?v=... أو youtube.com/live/...) والسيرفر يستخرج رابط البث الحقيقي منه تلقائي. اتركه فاضي لو هتستخدم "قائمة تشغيل" تحت.</div>
 
+<label>User-Agent مخصص لرابط البث أعلاه (اختياري)</label>
+<input id="f_userAgent" placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64)...">
+<div class="hint">اختياري — بعض مواقع البث بترفض أي طلب من غير User-Agent متعارف عليه. لو حصلت مشكلة في تشغيل رابط معين، جرب تحط هنا نفس الـ User-Agent اللي المتصفح بيبعته.</div>
+
 <label>قائمة تشغيل (أفلام / مسلسلات / مقاطع صوتية)</label>
 <div class="hint" style="margin-top:0;margin-bottom:8px">أضف كل فيلم أو مقطع في صف مستقل: اسمه، رابطه، وصورة اختيارية (للمقاطع الصوتية mp3 فقط). رتّبهم بالأسهم، والاسم هيظهر مكتوب فوق الفيديو وهيتغيّر تلقائي مع كل عنصر جديد.</div>
 <div id="f_playlist_rows" class="plRows"></div>
@@ -1954,16 +1973,16 @@ if(h > 0) return h + ":" + pad(m) + ":" + pad(s);
 return m + ":" + pad(s);
 }
 
-// عرض الـ playlist المخزّن (مصفوفة { name, url, image } أو نصوص قديمة) كصفوف { name, url, image } جاهزة للتعديل
+// عرض الـ playlist المخزّن (مصفوفة { name, url, image, userAgent } أو نصوص قديمة) كصفوف جاهزة للتعديل
 function playlistToRows(playlist){
 const rows = (playlist || []).map(item => {
-if (typeof item === "string") return { name: "", url: item, image: "" };
-return { name: item?.name || "", url: item?.url || "", image: item?.image || "" };
+if (typeof item === "string") return { name: "", url: item, image: "", userAgent: "" };
+return { name: item?.name || "", url: item?.url || "", image: item?.image || "", userAgent: item?.userAgent || "" };
 });
-return rows.length > 0 ? rows : [{ name: "", url: "", image: "" }];
+return rows.length > 0 ? rows : [{ name: "", url: "", image: "", userAgent: "" }];
 }
 
-// تحويل صفوف { name, url, image } لمصفوفة أسطر نصية بصيغة "اسم | رابط | صورة" عشان تتبعت للسيرفر
+// تحويل صفوف { name, url, image, userAgent } لمصفوفة أسطر نصية بصيغة "اسم | رابط | صورة | يوزر أجينت" عشان تتبعت للسيرفر
 function rowsToPlaylist(rows){
 return (rows || [])
 .filter(r => (r.url || "").trim())
@@ -1971,6 +1990,8 @@ return (rows || [])
 const name = (r.name || "").trim();
 const url = (r.url || "").trim();
 const image = (r.image || "").trim();
+const ua = (r.userAgent || "").trim();
+if (ua) return (name || "") + "|" + url + "|" + image + "|" + ua;
 if (image) return (name || "") + "|" + url + "|" + image;
 return name ? (name + "|" + url) : url;
 });
@@ -1994,6 +2015,7 @@ return rows.map((row,i) => \`
 <input placeholder="اسم الفيلم أو المقطع" value="\${escAttr(row.name)}" oninput="\${updFn}(\${idArg}\${i},'name',this.value)">
 <input placeholder="رابط الفيديو أو MP3" value="\${escAttr(row.url)}" oninput="\${updFn}(\${idArg}\${i},'url',this.value)">
 <input placeholder="رابط الصورة (اختياري — لملفات mp3 فقط)" value="\${escAttr(row.image)}" oninput="\${updFn}(\${idArg}\${i},'image',this.value)">
+<input placeholder="User-Agent مخصص (اختياري)" value="\${escAttr(row.userAgent)}" oninput="\${updFn}(\${idArg}\${i},'userAgent',this.value)">
 </div>
 <div class="plRowActions">
 <button type="button" onclick="\${mvFn}(\${idArg}\${i},-1)" title="لأعلى"><i class="ti ti-chevron-up"></i></button>
@@ -2004,7 +2026,7 @@ return rows.map((row,i) => \`
 }
 
 // ---- صفوف نموذج "إضافة قناة" ----
-let addRows = [{ name:"", url:"", image:"" }];
+let addRows = [{ name:"", url:"", image:"", userAgent:"" }];
 
 function renderAddRows(){
 const box = document.getElementById("f_playlist_rows");
@@ -2015,12 +2037,12 @@ box.innerHTML = plRowsHtml(addRows, "add");
 function updateAddRow(i, field, val){ addRows[i][field] = val; }
 
 function addAddRow(){
-addRows.push({ name:"", url:"", image:"" });
+addRows.push({ name:"", url:"", image:"", userAgent:"" });
 renderAddRows();
 }
 
 function removeAddRow(i){
-if(addRows.length <= 1){ addRows[i] = { name:"", url:"", image:"" }; }
+if(addRows.length <= 1){ addRows[i] = { name:"", url:"", image:"", userAgent:"" }; }
 else { addRows.splice(i,1); }
 renderAddRows();
 }
@@ -2046,14 +2068,14 @@ editDraft[id].playlistRows[i][field] = val;
 
 function addEditRow(id){
 if(!editDraft[id]) return;
-editDraft[id].playlistRows.push({ name:"", url:"", image:"" });
+editDraft[id].playlistRows.push({ name:"", url:"", image:"", userAgent:"" });
 renderEditPlRows(id);
 }
 
 function removeEditRow(id, i){
 if(!editDraft[id]) return;
 const rows = editDraft[id].playlistRows;
-if(rows.length <= 1){ rows[i] = { name:"", url:"", image:"" }; }
+if(rows.length <= 1){ rows[i] = { name:"", url:"", image:"", userAgent:"" }; }
 else { rows.splice(i,1); }
 renderEditPlRows(id);
 }
@@ -2277,6 +2299,11 @@ box.innerHTML += \`
 <div class="editField">
 <div class="tLbl">الصورة الافتراضية للمقاطع الصوتية (mp3 بدون صورة خاصة بيها)</div>
 <input value="\${(editDraft[id]?.audioImage ?? ch.audioImage ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','audioImage',this.value)">
+</div>
+
+<div class="editField">
+<div class="tLbl">User-Agent مخصص لرابط INPUT (اختياري — لو مش مستخدم قائمة تشغيل)</div>
+<input value="\${(editDraft[id]?.userAgent ?? ch.userAgent ?? '').replace(/"/g,'&quot;')}" oninput="updateDraft('\${id}','userAgent',this.value)">
 </div>
 
 <div class="editField">
@@ -2578,6 +2605,7 @@ const quality = document.getElementById("f_quality").value;
 const titlePosition = document.getElementById("f_titlePosition").value;
 const titleColor = document.getElementById("f_titleColor").value.trim() || "white";
 const audioImage = document.getElementById("f_audioImage").value.trim();
+const userAgent = document.getElementById("f_userAgent").value.trim();
 const scheduleEnabled = document.getElementById("f_scheduleEnabled").checked;
 const scheduleDays = Array.from(document.querySelectorAll(".schedDay:checked")).map(el => parseInt(el.value, 10));
 const scheduleStart = document.getElementById("f_scheduleStart").value || "00:00";
@@ -2598,7 +2626,7 @@ return;
 await fetch("/channel",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
-body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, schedule })
+body:JSON.stringify({ id, input, output, logo, category, watchUrl, quality, playlist, titlePosition, titleColor, audioImage, userAgent, schedule })
 });
 
 document.getElementById("f_id").value = "";
@@ -2612,11 +2640,12 @@ document.getElementById("f_titlePosition").value = "bottom";
 document.getElementById("f_titleColor").value = "white";
 document.getElementById("f_titleColorPicker").value = "#ffffff";
 document.getElementById("f_audioImage").value = "";
+document.getElementById("f_userAgent").value = "";
 document.getElementById("f_scheduleEnabled").checked = false;
 document.querySelectorAll(".schedDay").forEach(el => el.checked = false);
 document.getElementById("f_scheduleStart").value = "00:00";
 document.getElementById("f_scheduleStop").value = "23:59";
-addRows = [{ name:"", url:"", image:"" }];
+addRows = [{ name:"", url:"", image:"", userAgent:"" }];
 renderAddRows();
 
 load();
@@ -2640,6 +2669,7 @@ playlistRows: playlistToRows(channelsCache[id].playlist),
 titlePosition: channelsCache[id].titlePosition || "bottom",
 titleColor: channelsCache[id].titleColor || "white",
 audioImage: channelsCache[id].audioImage || "",
+userAgent: channelsCache[id].userAgent || "",
 scheduleEnabled: channelsCache[id].schedule?.enabled || false,
 scheduleDays: (channelsCache[id].schedule?.days || []).map(String),
 scheduleStart: channelsCache[id].schedule?.start || "00:00",
@@ -2678,6 +2708,7 @@ quality: draft.quality ?? channelsCache[id].quality ?? "high",
 titlePosition: draft.titlePosition ?? channelsCache[id].titlePosition ?? "bottom",
 titleColor: draft.titleColor ?? channelsCache[id].titleColor ?? "white",
 audioImage: draft.audioImage ?? channelsCache[id].audioImage ?? "",
+userAgent: draft.userAgent ?? channelsCache[id].userAgent ?? "",
 schedule,
 playlist
 })
