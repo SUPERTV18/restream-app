@@ -432,8 +432,8 @@ const QUALITY_PRESETS = {
     maxrate: "2800k",
     bufsize: "5000k",
     preset: "veryfast",
-    profile: "main",
-    level: "3.1",
+    profile: "high",
+    level: "4.1",
     fps: "25"
   },
   low: {
