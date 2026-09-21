@@ -591,228 +591,74 @@ async function spawnStream(id) {
   let extraEncodeArgs = [];
 
   if (audioMode) {
+    // مصدر الفيديو: صورة ثابتة (لو موجودة) أو خلفية سودا لو مفيش صورة خالص
+    // ملحوظة مهمة: لازم "-loop 1" على اللوجو كمان هنا — لأننا مستخدمين "-shortest"،
+    // فأي صورة بتتحمّل بفريم واحد بس (من غير loop) هتخلص فورًا وتوقف البث كله على طول
+    // حتى لو الصوت لسه له ساعات، فلازم كل المداخل المصوّرة (الصورة الأساسية + اللوجو) تتكرر بلا نهاية
+    ffmpegInputArgs = stillImage
+      ? ["-loop", "1", "-i", stillImage, ...requestHeaderArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)]
+      : ["-f", "lavfi", "-i", `color=c=black:s=${q.scale}:r=${q.fps}`, ...requestHeaderArgs, "-i", resolvedInput, "-loop", "1", "-i", getLogo(id)];
 
-  // ----------------------------------------------------
-  // 🎬 مصادر الفيديو
-  // ----------------------------------------------------
+    filterComplex =
+      `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
+      `[2:v]scale=-1:3000[logo];` +
+      `[bg][logo]overlay=W-w-2:2[merged]` +
+      titleFilter;
 
-  ffmpegInputArgs = stillImage
-    ? [
-        "-loop", "1",
-        "-i", stillImage,
+    ffmpegMapArgs = ["-map", "[base]", "-map", "1:a"];
+    // الصورة بتتكرر بلا نهاية، فلازم نوقف البث لما الصوت يخلص عشان تنتقل القائمة للمقطع اللي بعده
+    extraEncodeArgs = ["-shortest"];
+  } else {
+    ffmpegInputArgs = [...requestHeaderArgs, "-i", resolvedInput, "-i", getLogo(id)];
 
-        ...requestHeaderArgs,
+    filterComplex =
+      `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
+      `[1:v]scale=-1:3000[logo];` +
+      `[bg][logo]overlay=W-w-2:2[merged]` +
+      titleFilter;
 
-        "-i", resolvedInput,
+    ffmpegMapArgs = ["-map", "[base]", "-map", "0:a?"];
+  }
 
-        "-loop", "1",
-        "-i", getLogo(id)
-      ]
-    : [
-        "-f", "lavfi",
-        "-i", `color=c=black:s=${q.scale}:r=${q.fps}`,
+  const ffmpegArgs = [
+    "-re",
 
-        ...requestHeaderArgs,
+    "-reconnect", "1",
+    "-reconnect_streamed", "1",
+    "-reconnect_delay_max", "5",
 
-        "-i", resolvedInput,
+    ...ffmpegInputArgs,
 
-        "-loop", "1",
-        "-i", getLogo(id)
-      ];
+    "-filter_complex",
+    filterComplex,
 
-  // ----------------------------------------------------
-  // 🖼️ حساب حجم اللوجو حسب جودة البث
-  // ----------------------------------------------------
+    ...ffmpegMapArgs,
 
-  const outputSize =
-    String(q.scale).split(":");
+    "-c:v", "libx264",
+"-preset", q.preset,
+"-tune", audioMode ? "stillimage" : "zerolatency",
 
-  const outputWidth =
-    parseInt(outputSize[0], 10) || 1920;
+"-pix_fmt", "yuv420p",
 
-  const outputHeight =
-    parseInt(outputSize[1], 10) || 1080;
+"-profile:v", q.profile,
+"-level", q.level,
 
-  // الحجم الأساسي المستخدم في 1080p
-  const BASE_LOGO_HEIGHT = 3000;
+"-b:v", q.bitrate,
+"-maxrate", q.maxrate,
+"-bufsize", q.bufsize,
 
-  // تصغير اللوجو بنفس نسبة انخفاض دقة الفيديو
-  const logoHeight =
-    Math.round(
-      BASE_LOGO_HEIGHT *
-      (outputHeight / 1080)
-    );
+"-r", q.fps,
+"-g", "50",
 
-  // ----------------------------------------------------
-  // 🎨 FILTER
-  // ----------------------------------------------------
+    "-c:a", "aac",
+    "-b:a", "128k",
 
-  filterComplex =
-    `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,` +
-    `pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
+    ...extraEncodeArgs,
 
-    `[2:v]scale=-1:${logoHeight}:force_original_aspect_ratio=decrease[logo];` +
-
-    `[bg][logo]overlay=W-w-2:2[merged]` +
-
-    titleFilter;
-
-  ffmpegMapArgs = [
-    "-map", "[base]",
-    "-map", "1:a"
+    "-f", "flv",
+    ch.output
   ];
 
-  // الصورة واللوجو يتكرران، وينتهي البث مع انتهاء الصوت
-  extraEncodeArgs = [
-    "-shortest"
-  ];
-
-} else {
-
-  // ----------------------------------------------------
-  // 🎬 مصدر الفيديو العادي
-  // ----------------------------------------------------
-
-  ffmpegInputArgs = [
-    ...requestHeaderArgs,
-
-    "-i",
-    resolvedInput,
-
-    "-loop",
-    "1",
-
-    "-i",
-    getLogo(id)
-  ];
-
-  // ----------------------------------------------------
-  // 🖼️ حساب حجم اللوجو حسب جودة البث
-  // ----------------------------------------------------
-
-  const outputSize =
-    String(q.scale).split(":");
-
-  const outputWidth =
-    parseInt(outputSize[0], 10) || 1920;
-
-  const outputHeight =
-    parseInt(outputSize[1], 10) || 1080;
-
-  // الحجم الأساسي المستخدم في 1080p
-  const BASE_LOGO_HEIGHT = 3000;
-
-  const logoHeight =
-    Math.round(
-      BASE_LOGO_HEIGHT *
-      (outputHeight / 1080)
-    );
-
-  // ----------------------------------------------------
-  // 🎨 FILTER
-  // ----------------------------------------------------
-
-  filterComplex =
-    `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,` +
-    `pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
-
-    `[1:v]scale=-1:${logoHeight}:force_original_aspect_ratio=decrease[logo];` +
-
-    `[bg][logo]overlay=W-w-2:2[merged]` +
-
-    titleFilter;
-
-  ffmpegMapArgs = [
-    "-map", "[base]",
-    "-map", "0:a?"
-  ];
-}
-
-
-// ====================================================
-// 🎥 FFMPEG ARGS
-// ====================================================
-
-const ffmpegArgs = [
-
-  "-re",
-
-  "-reconnect",
-  "1",
-
-  "-reconnect_streamed",
-  "1",
-
-  "-reconnect_delay_max",
-  "5",
-
-  ...ffmpegInputArgs,
-
-  "-filter_complex",
-  filterComplex,
-
-  ...ffmpegMapArgs,
-
-  // --------------------------------------------------
-  // VIDEO
-  // --------------------------------------------------
-
-  "-c:v",
-  "libx264",
-
-  "-preset",
-  q.preset,
-
-  "-tune",
-  audioMode
-    ? "stillimage"
-    : "zerolatency",
-
-  "-pix_fmt",
-  "yuv420p",
-
-  "-profile:v",
-  q.profile,
-
-  "-level",
-  q.level,
-
-  "-b:v",
-  q.bitrate,
-
-  "-maxrate",
-  q.maxrate,
-
-  "-bufsize",
-  q.bufsize,
-
-  "-r",
-  q.fps,
-
-  "-g",
-  "50",
-
-  // --------------------------------------------------
-  // AUDIO
-  // --------------------------------------------------
-
-  "-c:a",
-  "aac",
-
-  "-b:a",
-  "128k",
-
-  ...extraEncodeArgs,
-
-  // --------------------------------------------------
-  // OUTPUT
-  // --------------------------------------------------
-
-  "-f",
-  "flv",
-
-  ch.output
-];
   // نسجّل أمر ffmpeg الكامل في لوج القناة (مع إخفاء رابط الإخراج RTMP لأنه غالبًا فيه مفتاح سري)
   const loggedArgs = ffmpegArgs.map(a => (typeof a === "string" && a === ch.output) ? "[RTMP_OUTPUT_HIDDEN]" : a);
   pushLog(id, "🔧 ffmpeg " + loggedArgs.map(a => (typeof a === "string" && /[\s|]/.test(a)) ? `"${a}"` : a).join(" "));
