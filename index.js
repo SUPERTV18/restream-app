@@ -432,8 +432,8 @@ const QUALITY_PRESETS = {
     maxrate: "2800k",
     bufsize: "5000k",
     preset: "veryfast",
-    profile: "main",
-    level: "3.1",
+    profile: "high",
+    level: "4.1",
     fps: "25"
   },
   low: {
@@ -590,11 +590,6 @@ async function spawnStream(id) {
   let ffmpegMapArgs;
   let extraEncodeArgs = [];
 
-  // حجم اللوجو كنسبة ثابتة من ارتفاع الفيديو (مش رقم ثابت) — عشان يفضل بنفس الحجم والمكان نسبيًا
-  // في أي جودة (1080p / 720p / 480p)، بدل ما يختلف حجمه بين الجودات المختلفة
-  const canvasHeight = parseInt(q.scale.split(":")[1], 10) || 1080;
-  const logoHeightPx = Math.round(canvasHeight * 0.14);
-
   if (audioMode) {
     // مصدر الفيديو: صورة ثابتة (لو موجودة) أو خلفية سودا لو مفيش صورة خالص
     // ملحوظة مهمة: لازم "-loop 1" على اللوجو كمان هنا — لأننا مستخدمين "-shortest"،
@@ -606,7 +601,7 @@ async function spawnStream(id) {
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
-      `[2:v]scale=-1:${logoHeightPx}[logo];` +
+      `[2:v]scale=-1:3000[logo];` +
       `[bg][logo]overlay=W-w-2:2[merged]` +
       titleFilter;
 
@@ -618,7 +613,7 @@ async function spawnStream(id) {
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
-      `[1:v]scale=-1:${logoHeightPx}[logo];` +
+      `[1:v]scale=-1:3000[logo];` +
       `[bg][logo]overlay=W-w-2:2[merged]` +
       titleFilter;
 
