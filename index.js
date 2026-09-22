@@ -453,6 +453,21 @@ function getQualityPreset(ch) {
 }
 
 // ======================
+// 🖼️ ثبات اللوجو عبر الجودات المختلفة
+// ======================
+// الرقم اللي كان مستخدم فعليًا في فلتر اللوجو (scale=-1:3000) كان متظبط بصريًا
+// على أساس جودة 1080p (ارتفاع الفريم = 1080). عشان يفضل اللوجو بنفس الحجم والمكان
+// بالظبط لما نبدّل الجودة لـ 720p أو 480p، لازم نحافظ على نفس النسبة دي
+// (3000 ÷ 1080) ونحسب الرقم المكافئ لكل جودة حسب ارتفاعها الفعلي.
+const LOGO_REFERENCE_HEIGHT = 1080; // ارتفاع الفريم اللي كان الرقم القديم متظبط عليه
+const LOGO_REFERENCE_SCALE = 3000;  // الرقم القديم (scale=-1:3000) كما كان مضبوطًا على 1080p
+
+function getLogoScaleHeight(q) {
+  const frameHeight = parseInt(String(q.scale).split(":")[1], 10) || LOGO_REFERENCE_HEIGHT;
+  return Math.round((LOGO_REFERENCE_SCALE / LOGO_REFERENCE_HEIGHT) * frameHeight);
+}
+
+// ======================
 // ▶️ يوتيوب: استخراج رابط HLS الحقيقي من رابط بث مباشر على يوتيوب
 // ======================
 function isYoutubeUrl(url) {
@@ -557,6 +572,10 @@ async function spawnStream(id) {
 
   const q = getQualityPreset(ch);
 
+  // حجم اللوجو (بالبكسل) المكافئ لهذه الجودة — محسوب بنفس نسبة الرقم القديم (3000) على 1080p
+  // عشان يفضل اللوجو بنفس الحجم والمكان بالظبط في كل الجودات
+  const logoScaleHeight = getLogoScaleHeight(q);
+
   // مكان اسم الفيلم على الشاشة: فوق أو تحت (افتراضي: تحت)، دايمًا في الجانب الشمال (x=20)
   const titleY = ch.titlePosition === "top" ? "60" : "h-th-20";
 
@@ -601,7 +620,7 @@ async function spawnStream(id) {
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
-      `[2:v]scale=-1:3000[logo];` +
+      `[2:v]scale=-1:${logoScaleHeight}[logo];` +
       `[bg][logo]overlay=W-w-2:2[merged]` +
       titleFilter;
 
@@ -613,7 +632,7 @@ async function spawnStream(id) {
 
     filterComplex =
       `[0:v]scale=${q.scale}:force_original_aspect_ratio=decrease,pad=${q.scale}:(ow-iw)/2:(oh-ih)/2[bg];` +
-      `[1:v]scale=-1:3000[logo];` +
+      `[1:v]scale=-1:${logoScaleHeight}[logo];` +
       `[bg][logo]overlay=W-w-2:2[merged]` +
       titleFilter;
 
